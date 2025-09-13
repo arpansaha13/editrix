@@ -103,6 +103,7 @@ export class Editrix {
     // Because of ZERO_WIDTH_SPACE the initial cursorOffset will be 1 when the node is empty
     if (!beforeText.startsWith(ZERO_WIDTH_SPACE)) {
       this.cursorOffset++
+      this.caretManager.setCursorPosition(this.currentNode.getId(), this.cursorOffset)
     }
   }
 
