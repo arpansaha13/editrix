@@ -1,0 +1,15 @@
+{
+  "name": "@editrix/core",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "import": "src/index.ts",
+      "require": "src/index.ts",
+      "types": "src/index.ts"
+    }
+  }
+}
