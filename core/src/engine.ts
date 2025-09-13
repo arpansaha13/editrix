@@ -179,12 +179,50 @@ export class Editrix {
   private handleBackspace() {
     if (!this.currentNode) return
 
+    // If at the beginning of current node, try to merge with previous sibling
+    if (this.cursorOffset === 0) {
+      const parent = this.currentNode.getParent()
+      if (!parent) return
+
+      // Store current node info as it will be reassigned
+      const nodeToDelete = this.currentNode
+      const currentText = nodeToDelete.getTextContent()
+
+      const siblings = parent.getChildren()
+      const currentIndex = siblings.findIndex(child => child.getId() === nodeToDelete.getId())
+      if (currentIndex <= 0) return // No previous sibling
+
+      const prevSibling = siblings[currentIndex - 1]
+      const prevText = prevSibling.getTextContent()
+
+      // Move cursor to end of previous sibling's content
+      this.cursorOffset = prevText.length
+      this.currentNode = prevSibling
+
+      // Merge texts
+      prevSibling.setTextContent(prevText + currentText)
+      this.renderer.updateNode(prevSibling)
+
+      // Remove current node from virtual and real DOM
+      siblings.splice(currentIndex, 1)
+      this.renderer.deleteNode(nodeToDelete.getId())
+
+      // Update cursor position
+      this.caretManager.setCursorPosition(prevSibling.getId(), this.cursorOffset)
+
+      return
+    }
+
+    // Normal backspace within the current node
     const currentText = this.currentNode.getTextContent()
     const beforeText = currentText.slice(0, this.cursorOffset - 1) // exclude last character
     const afterText = currentText.slice(this.cursorOffset)
 
-    // Update original node with text before cursor
+    // Update original node with text before caret
     this.currentNode.setTextContent(beforeText + afterText)
     this.renderer.updateNode(this.currentNode)
+
+    this.cursorOffset--
+    this.caretManager.setCursorPosition(this.currentNode.getId(), this.cursorOffset)
   }
 }

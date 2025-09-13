@@ -18,6 +18,12 @@ export interface Renderer {
    * Updates an existing DOM node with VNode changes
    */
   updateNode(vnode: VNode): void
+
+  /**
+   * Removes a DOM node by its corresponding VNode ID
+   * @param vnodeId The ID of the VNode whose DOM node should be removed
+   */
+  deleteNode(vnodeId: string): void
 }
 
 export interface CursorPosition {

@@ -74,4 +74,11 @@ export class DomRenderer implements Renderer {
       }
     })
   }
+
+  deleteNode(vnodeId: string) {
+    const element = document.querySelector(`[data-editrix-id="${vnodeId}"]`)
+    if (element) {
+      element.remove()
+    }
+  }
 }
