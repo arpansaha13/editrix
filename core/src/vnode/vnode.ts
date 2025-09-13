@@ -43,6 +43,8 @@ export class VNode {
       this.textContent = ZERO_WIDTH_SPACE
     } else if (text.startsWith(ZERO_WIDTH_SPACE)) {
       this.textContent = text.slice(1)
+    } else if (text.endsWith(ZERO_WIDTH_SPACE)) {
+      this.textContent = text.slice(0, text.length - 1)
     } else {
       this.textContent = text
     }

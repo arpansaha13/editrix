@@ -2,10 +2,12 @@ import { VNode } from './vnode/vnode'
 import { DomRenderer } from './renderers/renderer'
 import { EDITRIX_DATA_ID, ZERO_WIDTH_SPACE } from './constants'
 import { isArrowKey, isTypeableCharacter } from './utils'
+import { CaretManager } from './renderers/caretManager'
 
 export class Editrix {
   private readonly container: HTMLElement | null = null
-  private readonly renderer: DomRenderer | null = null
+  private readonly renderer: DomRenderer = null!
+  private readonly caretManager: CaretManager = null!
   private readonly root: VNode
   private currentNode: VNode | null = null
   private cursorOffset = 0
@@ -22,6 +24,8 @@ export class Editrix {
 
     this.renderer = new DomRenderer(this.container)
     this.renderer.mount(this.root)
+
+    this.caretManager = new CaretManager()
 
     this.setupEventListeners()
 
@@ -64,17 +68,17 @@ export class Editrix {
     }
   }
 
-  private findNodeAndUpdateCursor(nodeId: string, event: MouseEvent) {
-    const findNode = (node: VNode): VNode | null => {
-      if (node.getId() === nodeId) return node
-      for (const child of node.getChildren()) {
-        const found = findNode(child)
-        if (found) return found
-      }
-      return null
+  private findVNode(vnodeId: string, node: VNode): VNode | null {
+    if (node.getId() === vnodeId) return node
+    for (const child of node.getChildren()) {
+      const found = this.findVNode(vnodeId, child)
+      if (found) return found
     }
+    return null
+  }
 
-    const node = findNode(this.root)
+  private findNodeAndUpdateCursor(vnodeId: string, event: MouseEvent) {
+    const node = this.findVNode(vnodeId, this.root)
     if (node) {
       this.currentNode = node
       // Get cursor position relative to the node
@@ -86,7 +90,7 @@ export class Editrix {
   }
 
   private updateTextContent(e: KeyboardEvent) {
-    if (!this.currentNode || !this.renderer) return
+    if (!this.currentNode) return
 
     const currentText = this.currentNode.getTextContent()
     const beforeText = currentText.slice(0, this.cursorOffset)
@@ -103,22 +107,34 @@ export class Editrix {
   }
 
   private updateCursorOffset(e: KeyboardEvent) {
+    if (!this.currentNode) return
+
+    let newPosition: ReturnType<CaretManager['setCursorPosition']> = null
+
     if (e.key === 'ArrowLeft') {
-      this.cursorOffset--
+      newPosition = this.caretManager.setCursorPosition(this.currentNode.getId(), this.cursorOffset, 'left')
     }
     else if (e.key === 'ArrowRight') {
-      this.cursorOffset++
+      newPosition = this.caretManager.setCursorPosition(this.currentNode.getId(), this.cursorOffset, 'right')
     }
     else if (e.key === 'ArrowUp') {
-      // TODO
+      newPosition = this.caretManager.setCursorPosition(this.currentNode.getId(), this.cursorOffset, 'up')
     }
     else if (e.key === 'ArrowDown') {
-      // TODO
+      newPosition = this.caretManager.setCursorPosition(this.currentNode.getId(), this.cursorOffset, 'down')
+    }
+
+    if (newPosition) {
+      this.cursorOffset = newPosition.offset
+      const vnode = this.findVNode(newPosition.vnodeId, this.root)
+      if (vnode) {
+        this.currentNode = vnode
+      }
     }
   }
 
   private handleEnterKey() {
-    if (!this.currentNode || !this.renderer) return
+    if (!this.currentNode) return
 
     const currentText = this.currentNode.getTextContent()
     const beforeText = currentText.slice(0, this.cursorOffset)
@@ -160,7 +176,7 @@ export class Editrix {
   }
 
   private handleBackspace() {
-    if (!this.currentNode || !this.renderer) return
+    if (!this.currentNode) return
 
     const currentText = this.currentNode.getTextContent()
     const beforeText = currentText.slice(0, this.cursorOffset - 1) // exclude last character

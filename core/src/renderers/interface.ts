@@ -19,3 +19,8 @@ export interface Renderer {
    */
   updateNode(vnode: VNode): void
 }
+
+export interface CursorPosition {
+  vnodeId: string
+  offset: number
+}

@@ -1,6 +1,6 @@
 /**
  * Placeholder character that has no visible width.
- * Used for showing height when tagContent is empty.
+ * Used for showing height and holding the caret when tagContent is empty.
  */
 export const ZERO_WIDTH_SPACE = '\u200B'
 
