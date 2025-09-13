@@ -35,9 +35,18 @@ export class Editrix {
   private readonly eventHandlers = {
     click: (e: MouseEvent) => {
       const target = e.target as HTMLElement
-      const editrixId = target.getAttribute(EDITRIX_DATA_ID)
-      if (editrixId) {
-        this.findNodeAndUpdateCursor(editrixId, e)
+      const vnodeId = target.getAttribute(EDITRIX_DATA_ID)
+      if (vnodeId) {
+        const node = this.findVNode(vnodeId, this.root)
+        if (!node) return
+
+        this.currentNode = node
+        // Get cursor position relative to the node
+        const range = this.caretManager.getRangeFromPoint(e.clientX, e.clientY)
+        if (range) {
+          this.cursorOffset = range.startOffset
+          this.caretManager.setCursorPosition(vnodeId, this.cursorOffset)
+        }
       }
     },
 
@@ -75,18 +84,6 @@ export class Editrix {
       if (found) return found
     }
     return null
-  }
-
-  private findNodeAndUpdateCursor(vnodeId: string, event: MouseEvent) {
-    const node = this.findVNode(vnodeId, this.root)
-    if (node) {
-      this.currentNode = node
-      // Get cursor position relative to the node
-      const range = document.caretRangeFromPoint(event.clientX, event.clientY)
-      if (range) {
-        this.cursorOffset = range.startOffset
-      }
-    }
   }
 
   private updateTextContent(e: KeyboardEvent) {
@@ -162,6 +159,7 @@ export class Editrix {
       // Update current node and cursor
       this.currentNode = newNode
       this.cursorOffset = 0
+      this.caretManager.setCursorPosition(newNode.getId(), this.cursorOffset)
 
       // Set cursor to beginning of new node
       const newElement = document.querySelector(`[data-editrix-id="${newNode.getId()}"]`)

@@ -16,14 +16,11 @@ export class CaretManager {
     if (direction && sel.rangeCount > 0) {
       const range = sel.getRangeAt(0);
 
-      switch (direction) {
-        case "left":
-        case "right":
-          return this.handleHorizontalMove(sel, range, direction);
-        case "up":
-        case "down":
-          return this.handleVerticalMove(sel, range, element, direction);
+      if (direction === "left" || direction === 'right') {
+        return this.handleHorizontalMove(sel, range, direction);
       }
+
+      return this.handleVerticalMove(sel, range, element, direction);
     }
 
     return this.setExplicitCursor(sel, element, offset);
@@ -75,18 +72,7 @@ export class CaretManager {
     const x = rect.left;
     const y = direction === "up" ? rect.top - lineHeight : rect.bottom + lineHeight;
 
-    let newRange: Range | null = null;
-    if ((document as any).caretRangeFromPoint) {
-      newRange = (document as any).caretRangeFromPoint(x, y);
-    } else if ((document as any).caretPositionFromPoint) {
-      const pos = (document as any).caretPositionFromPoint(x, y);
-      if (pos) {
-        newRange = document.createRange();
-        newRange.setStart(pos.offsetNode, pos.offset);
-        newRange.collapse(true);
-      }
-    }
-
+    const newRange = this.getRangeFromPoint(x, y);
     if (!newRange) return null;
 
     sel.removeAllRanges();
@@ -122,6 +108,30 @@ export class CaretManager {
 
     const vnodeId = this.getVnodeIdFromNode(textNode);
     return vnodeId ? { vnodeId, offset: safeOffset } : null;
+  }
+
+  /**
+   * Gets a Range object from x,y coordinates
+   * @param x The x-coordinate
+   * @param y The y-coordinate
+   * @returns A Range object or null if unable to create range
+   */
+  getRangeFromPoint(x: number, y: number): Range | null {
+    if (document.caretRangeFromPoint) {
+      return document.caretRangeFromPoint(x, y);
+    }
+
+    if (document.caretPositionFromPoint) {
+      const pos = document.caretPositionFromPoint(x, y);
+      if (pos) {
+        const range = document.createRange();
+        range.setStart(pos.offsetNode, pos.offset);
+        range.collapse(true);
+        return range;
+      }
+    }
+
+    return null;
   }
 
   /**
