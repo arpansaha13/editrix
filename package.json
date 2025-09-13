@@ -3,14 +3,19 @@
   "author": "Arpan Saha <https://github.com/arpansaha13>",
   "packageManager": "pnpm@10.14.0",
   "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "dev": "pnpm -F playground dev"
+    "dev": "pnpm -F playground dev",
+    "build": "esno scripts/build.mts"
   },
   "engines": {
     "node": ">=22.0.0"
   },
   "devDependencies": {
+    "@arpansaha13/tsc-out": "^0.1.3",
+    "@types/node": "^24.3.3",
     "eslint": "^9.35.0",
+    "esno": "^4.8.0",
     "prettier": "^3.6.2",
     "typescript": "^5.9.2",
     "vite": "^7.1.5"
