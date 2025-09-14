@@ -3,23 +3,24 @@ import { ZERO_WIDTH_SPACE } from '../constants';
 export class TextRun {
   private readonly id: string
   private text: string;
+  private empty: boolean;
+  private bold: boolean;
 
   constructor(text: string) {
     this.id = Math.random().toString(36).substring(2, 9)
+    this.bold = false
+    this.empty = false
+    this.text = ZERO_WIDTH_SPACE
 
-    if (text === '') {
-      this.text = ZERO_WIDTH_SPACE
-    } else if (text.startsWith(ZERO_WIDTH_SPACE)) {
-      this.text = text.slice(1)
-    } else if (text.endsWith(ZERO_WIDTH_SPACE)) {
-      this.text = text.slice(0, text.length - 1)
-    } else {
-      this.text = text
-    }
+    this.setText(text)
   }
 
   getId(): string {
     return this.id
+  }
+
+  isEmpty(): boolean {
+    return this.empty
   }
 
   getText(): string {
@@ -27,6 +28,32 @@ export class TextRun {
   }
 
   setText(newText: string): void {
+    if (newText.startsWith(ZERO_WIDTH_SPACE)) {
+      newText = newText.slice(1)
+    }
+    if (newText.endsWith(ZERO_WIDTH_SPACE)) {
+      newText = newText.slice(0, newText.length - 1)
+    }
+
+    if (newText === '') {
+      this.empty = true
+      newText = ZERO_WIDTH_SPACE
+    } else {
+      this.empty = false
+    }
+
     this.text = newText;
+  }
+
+  isBold(): boolean {
+    return this.bold
+  }
+
+  setBold(bool: boolean) {
+    this.bold = bool
+  }
+
+  toggleBold() {
+    this.bold = !this.bold
   }
 }

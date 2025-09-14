@@ -4,6 +4,7 @@ import { DomRenderer } from './renderers/renderer'
 import { EDITRIX_DATA_ID, ZERO_WIDTH_SPACE } from './constants'
 import { isArrowKey, isTypeableCharacter } from './utils'
 import { CaretManager } from './renderers/caretManager'
+import { TextRun } from './nodes/textRun'
 
 export class Editrix {
   private readonly container: HTMLElement | null = null
@@ -26,7 +27,7 @@ export class Editrix {
     this.renderer = new DomRenderer(this.container)
     this.renderer.mount(this.root)
 
-    this.caretManager = new CaretManager()
+    this.caretManager = new CaretManager(this.root.getId())
 
     this.setupEventListeners()
 
@@ -60,6 +61,10 @@ export class Editrix {
         e.preventDefault()
         this.handleBackspace()
       }
+      else if (e.key === 'b' && e.ctrlKey) {
+        e.preventDefault()
+        this.applyBold()
+      }
       else if (isTypeableCharacter(e)) {
         e.preventDefault()
         this.updateTextContent(e)
@@ -90,15 +95,34 @@ export class Editrix {
   private updateTextContent(e: KeyboardEvent) {
     if (!this.currentNode) return
 
-    const currentText = this.currentNode.getTextContent()
-    const beforeText = currentText.slice(0, this.cursorOffset)
-    const afterText = currentText.slice(this.cursorOffset)
+    const runs = this.currentNode.getRuns()
+    let totalOffset = 0
+    let currentRun: TextRun | null = null
 
-    // Insert character at cursorOffset
-    this.currentNode.setTextContent(beforeText + e.key + afterText)
+    // Find which run contains the cursor
+    for (const element of runs) {
+      const run = element
+      const runLength = run.getText().length
+      if (totalOffset + runLength >= this.cursorOffset) {
+        currentRun = run
+        break
+      }
+      totalOffset += runLength
+    }
+
+    if (!currentRun) return
+
+    // Calculate offset within the current run
+    const runOffset = this.cursorOffset - totalOffset
+    const text = currentRun.getText()
+    const beforeText = text.slice(0, runOffset)
+    const afterText = text.slice(runOffset)
+
+    // Insert character at current run offset
+    currentRun.setText(beforeText + e.key + afterText)
     this.renderer.updateNode(this.currentNode)
 
-    // Because of ZERO_WIDTH_SPACE the initial cursorOffset will be 1 when the node is empty
+    // Because of ZERO_WIDTH_SPACE the initial cursorOffset will be 1 when the run is empty
     if (!beforeText.startsWith(ZERO_WIDTH_SPACE)) {
       this.cursorOffset++
       this.caretManager.setCursorPosition(this.currentNode.getId(), this.cursorOffset)
@@ -156,18 +180,22 @@ export class Editrix {
 
     // Calculate offset within the current run
     const runOffset = this.cursorOffset - totalOffset
-    const splitRun = this.currentNode.splitRunAtOffset(currentRunIndex, runOffset)
+    const splitRun = this.currentNode.splitRunAtOffset(currentRunIndex, runOffset) ?? new TextRun('')
 
     const parent = this.currentNode.getParent()
     if (!parent) return
 
     const newNode = new BlockNode(this.currentNode.getTagName(), parent)
 
+    // Handle split run - preserve bold formatting
+    if (currentRun.isBold()) {
+      splitRun.setBold(true)
+    }
+
     // Move remaining runs to new node
     const remainingRuns = this.currentNode.removeRunsFrom(currentRunIndex + 1)
-    if (splitRun) {
-      remainingRuns.unshift(splitRun)
-    }
+    remainingRuns.unshift(splitRun)
+
     newNode.insertRunsAt(remainingRuns, 0)
 
     parent.insertChildAfter(newNode, this.currentNode)
@@ -195,6 +223,64 @@ export class Editrix {
       selection?.removeAllRanges()
       selection?.addRange(range)
     }
+  }
+
+  /**
+   * Restore cursor position to the current node and offset
+   */
+  restoreFocus() {
+    if (!this.currentNode) return
+    this.caretManager.setCursorPosition(this.currentNode.getId(), this.cursorOffset)
+  }
+
+  /**
+   * Create an empty bold text run at current cursor position
+   */
+  applyBold() {
+    if (!this.currentNode) return
+
+    const runs = this.currentNode.getRuns()
+    let totalOffset = 0
+    let currentRunIndex = 0
+    let currentRun = runs[0]
+
+    // Find which run contains the cursor
+    for (let i = 0; i < runs.length; i++) {
+      const run = runs[i]
+      const runLength = run.getText().length
+      if (totalOffset + runLength >= this.cursorOffset) {
+        currentRunIndex = i
+        currentRun = run
+        break
+      }
+      totalOffset += runLength
+    }
+
+    if (!currentRun) return
+
+    // Create a new empty bold run
+    const runOffset = this.cursorOffset - totalOffset
+    const emptyRun = new TextRun('')
+    emptyRun.setBold(true)
+
+    if (runOffset === currentRun.getText().length) {
+      // Insert after current run
+      this.currentNode.insertTextRun(emptyRun, currentRunIndex + 1)
+      currentRunIndex++
+    } else {
+      // Split current run and insert between
+      const splitRun = this.currentNode.splitRunAtOffset(currentRunIndex, runOffset)
+      this.currentNode.insertTextRun(emptyRun, currentRunIndex + 1)
+      if (splitRun) {
+        this.currentNode.insertTextRun(splitRun, currentRunIndex + 2)
+      }
+      currentRunIndex++
+    }
+
+    // Update cursor to empty run
+    this.cursorOffset = totalOffset + runOffset + 1
+    this.renderer.updateNode(this.currentNode)
+    this.restoreFocus()
   }
 
   private handleBackspace() {

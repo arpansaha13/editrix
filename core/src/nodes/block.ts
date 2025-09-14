@@ -7,8 +7,8 @@ import { EDITRIX_DATA_ID, ZERO_WIDTH_SPACE } from '../constants'
 export class BlockNode {
   private readonly id: string
   private readonly parent: ContainerNode
-  private runs: TextRun[]
   private readonly attributes: Map<string, string>
+  private readonly runs: TextRun[]
   private tagName: HtmlTagName
 
   constructor(tagName: HtmlTagName, parent: ContainerNode) {
@@ -40,10 +40,6 @@ export class BlockNode {
 
   getTextContent(): string {
     return this.runs.map(run => run.getText()).join('')
-  }
-
-  setTextContent(text: string) {
-    this.runs = [new TextRun(text)]
   }
 
   getRuns(): TextRun[] {

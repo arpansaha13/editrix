@@ -1,7 +1,13 @@
-import { ZERO_WIDTH_SPACE } from '../constants';
+import { EDITRIX_DATA_ID, ZERO_WIDTH_SPACE } from '../constants';
 import type { CursorPosition } from './interface';
 
 export class CaretManager {
+  private readonly rootId: string
+
+  constructor(rootId: string) {
+    this.rootId = rootId
+  }
+
   setCursorPosition(
     blockNodeId: string,
     offset: number,
@@ -148,49 +154,76 @@ export class CaretManager {
    * @returns The target text node and the new caret offset, or `null` if no valid neighbor exists.
    */
   private moveToNeighbor(node: Node, forward: boolean): { node: Node; offset: number } | null {
-    let sibling: Node | null = forward ? node.nextSibling : node.previousSibling;
+    const parentSiblingNodeTypes: number[] = [Node.ELEMENT_NODE, Node.TEXT_NODE]
 
-    // First try siblings at the same level
-    // Skip elements (<span>, <img>, <br>), comment nodes, or whitespace
-    while (sibling && sibling.nodeType !== Node.TEXT_NODE) {
-      sibling = forward ? sibling.nextSibling : sibling.previousSibling;
+    /** Helper function to find deepest text node in an element */
+    const findDeepestTextNode = (element: Node): Node | null => {
+      let target: Node | null = forward ? element.firstChild : element.lastChild
+      while (target && target.nodeType !== Node.TEXT_NODE) {
+        if (target.nodeType === Node.ELEMENT_NODE) {
+          target = forward ? target.firstChild : target.lastChild
+        } else {
+          target = forward ? target.nextSibling : target.previousSibling
+        }
+      }
+      return target
     }
-    if (sibling) {
-      const textLength = sibling.textContent?.length ?? 0;
-      return {
-        node: sibling,
-        offset: forward ? 0 : textLength,
-      };
+
+    /** Helper function to check if a node contains the text node we're looking for */
+    const findTextNodeInElement = (node: Node): Node | null => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        return node
+      }
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        return findDeepestTextNode(node)
+      }
+      return null
     }
 
-    // If no text sibling, try moving to parent's siblings
-    const parent = node.parentNode;
-    if (!parent) return null;
+    /** Helper function to recursively climb up the tree looking for siblings */
+    const findSiblingInAncestors = (node: Node): Node | null => {
+      const parent = node.parentNode
+      if (!parent) return null
 
-    let parentSibling: Node | null = forward ? parent.nextSibling : parent.previousSibling;
+      // Check if we've reached the root element
+      if (parent instanceof Element && parent.getAttribute(EDITRIX_DATA_ID) === this.rootId) {
+        return null
+      }
 
-    // Skip non-element nodes (whitespace/newlines, comment nodes, etc.)
-    while (parentSibling && parentSibling.nodeType !== Node.ELEMENT_NODE) {
-      parentSibling = forward ? parentSibling.nextSibling : parentSibling.previousSibling;
+      let parentSibling: Node | null = forward ? parent.nextSibling : parent.previousSibling;
+      // Skip non-element nodes (whitespace/newlines, comment nodes, etc.)
+      while (parentSibling && !parentSiblingNodeTypes.includes(parentSibling.nodeType)) {
+        parentSibling = forward ? parentSibling.nextSibling : parentSibling.previousSibling;
+      }
+      if (!parentSibling) return null;
+
+      const textNode = findTextNodeInElement(parentSibling)
+      if (textNode) return textNode
+
+      return findSiblingInAncestors(parent)
     }
-    if (!parentSibling) return null;
 
-    // Find first/last text node inside the parent sibling
-    let target: Node | null = forward
-      ? parentSibling.firstChild
-      : parentSibling.lastChild;
-
-    // Find the deepest text node
-    while (target && target.nodeType !== Node.TEXT_NODE) {
-      target = forward ? target.firstChild : target.lastChild;
+    function findSibling(node: Node): Node | null {
+      let sibling = forward ? node.nextSibling : node.previousSibling
+      while (sibling) {
+        const textNode = findTextNodeInElement(sibling)
+        if (textNode) return textNode
+        sibling = forward ? sibling.nextSibling : sibling.previousSibling
+      }
+      return null
     }
-    if (!target) return null;
 
-    const textLength = target.textContent?.length ?? 0;
+    let nextNode = findSibling(node)
+    if (!nextNode) {
+      nextNode = findSiblingInAncestors(node)
+    }
+    if (!nextNode) return null
+
+    const textLength = nextNode.textContent?.length ?? 0
     return {
-      node: target,
-      offset: forward ? 0 : textLength,
-    };
+      node: nextNode,
+      offset: forward ? 0 : textLength
+    }
   }
 
   private getBlockNodeIdFromNode(node: Node): string | null {

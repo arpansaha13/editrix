@@ -39,7 +39,13 @@ export class DomRenderer implements Renderer {
     // Create text nodes for each run
     node.getRuns().forEach(run => {
       const text = document.createTextNode(run.getText())
-      element.appendChild(text)
+      if (run.isBold()) {
+        const strong = document.createElement('strong')
+        strong.appendChild(text)
+        element.appendChild(strong)
+      } else {
+        element.appendChild(text)
+      }
     })
 
     return element
@@ -80,7 +86,13 @@ export class DomRenderer implements Renderer {
     // Create new text nodes for each run
     node.getRuns().forEach(run => {
       const text = document.createTextNode(run.getText())
-      element.appendChild(text)
+      if (run.isBold()) {
+        const strong = document.createElement('strong')
+        strong.appendChild(text)
+        element.appendChild(strong)
+      } else {
+        element.appendChild(text)
+      }
     })
 
     // Update attributes
