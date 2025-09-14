@@ -135,43 +135,65 @@ export class Editrix {
   private handleEnterKey() {
     if (!this.currentNode) return
 
-    const currentText = this.currentNode.getTextContent()
-    const beforeText = currentText.slice(0, this.cursorOffset)
-    const afterText = currentText.slice(this.cursorOffset)
+    const runs = this.currentNode.getRuns()
+    let totalOffset = 0
+    let currentRunIndex = 0
+    let currentRun = runs[0]
 
-    // Update original node with text before cursor
-    this.currentNode.setTextContent(beforeText)
-    this.renderer.updateNode(this.currentNode)
+    // Find which run contains the cursor
+    for (let i = 0; i < runs.length; i++) {
+      const run = runs[i]
+      const runLength = run.getText().length
+      if (totalOffset + runLength >= this.cursorOffset) {
+        currentRunIndex = i
+        currentRun = run
+        break
+      }
+      totalOffset += runLength
+    }
+
+    if (!currentRun) return
+
+    // Calculate offset within the current run
+    const runOffset = this.cursorOffset - totalOffset
+    const splitRun = this.currentNode.splitRunAtOffset(currentRunIndex, runOffset)
 
     const parent = this.currentNode.getParent()
+    if (!parent) return
 
-    if (parent) {
-      const newNode = new BlockNode(this.currentNode.getTagName(), parent)
-      newNode.setTextContent(afterText)
+    const newNode = new BlockNode(this.currentNode.getTagName(), parent)
 
-      parent.insertChildAfter(newNode, this.currentNode)
+    // Move remaining runs to new node
+    const remainingRuns = this.currentNode.removeRunsFrom(currentRunIndex + 1)
+    if (splitRun) {
+      remainingRuns.unshift(splitRun)
+    }
+    newNode.insertRunsAt(remainingRuns, 0)
 
-      this.renderer.createNode(
-        newNode,
-        `[data-editrix-id="${parent.getId()}"]`,
-        `[data-editrix-id="${this.currentNode.getId()}"]`
-      )
+    parent.insertChildAfter(newNode, this.currentNode)
 
-      // Update current node and cursor
-      this.currentNode = newNode
-      this.cursorOffset = 0
-      this.caretManager.setCursorPosition(newNode.getId(), this.cursorOffset)
+    this.renderer.createNode(
+      newNode,
+      `[data-editrix-id="${parent.getId()}"]`,
+      `[data-editrix-id="${this.currentNode.getId()}"]`
+    )
 
-      // Set cursor to beginning of new node
-      const newElement = document.querySelector(`[data-editrix-id="${newNode.getId()}"]`)
-      if (newElement) {
-        const range = document.createRange()
-        const selection = window.getSelection()
-        range.setStart(newElement, 0)
-        range.collapse(true)
-        selection?.removeAllRanges()
-        selection?.addRange(range)
-      }
+    this.renderer.updateNode(this.currentNode)
+
+    // Update current node and cursor
+    this.currentNode = newNode
+    this.cursorOffset = 0
+    this.caretManager.setCursorPosition(newNode.getId(), this.cursorOffset)
+
+    // Set cursor to beginning of new node
+    const newElement = document.querySelector(`[data-editrix-id="${newNode.getId()}"]`)
+    if (newElement) {
+      const range = document.createRange()
+      const selection = window.getSelection()
+      range.setStart(newElement, 0)
+      range.collapse(true)
+      selection?.removeAllRanges()
+      selection?.addRange(range)
     }
   }
 
@@ -185,43 +207,94 @@ export class Editrix {
 
       // Store current node info as it will be reassigned
       const nodeToDelete = this.currentNode
-      const currentText = nodeToDelete.getTextContent()
-
       const siblings = parent.getChildren()
-      const currentIndex = siblings.findIndex(child => child.getId() === nodeToDelete.getId())
+      const currentIndex = siblings.findIndex((child: BlockNode) => {
+        const id = child.getId()
+        const nodeId = nodeToDelete.getId()
+        return id !== undefined && nodeId !== undefined && id === nodeId
+      })
       if (currentIndex <= 0) return // No previous sibling
 
       const prevSibling = siblings[currentIndex - 1]
-      const prevText = prevSibling.getTextContent()
+      if (!prevSibling) return
 
-      // Move cursor to end of previous sibling's content
+      const prevRuns = prevSibling.getRuns()
+      const lastPrevRun = prevRuns[prevRuns.length - 1]
+      const firstCurrentRun = nodeToDelete.getRuns()[0]
+
+      // Set cursor position to end of previous sibling's last run
+      const prevText = prevSibling.getTextContent()
       this.cursorOffset = prevText.length
       this.currentNode = prevSibling
 
-      // Merge texts
-      prevSibling.setTextContent(prevText + currentText)
-      this.renderer.updateNode(prevSibling)
+      // Merge the last run of previous sibling with first run of current node
+      if (lastPrevRun && firstCurrentRun) {
+        const insertAtIndex = prevRuns.length
+        prevSibling.insertTextRun(firstCurrentRun, insertAtIndex)
+        prevSibling.mergeRuns(insertAtIndex - 1, insertAtIndex)
+      }
+
+      // Move remaining runs to previous sibling
+      const remainingRuns = nodeToDelete.removeRunsFrom(1)
+      prevSibling.insertRunsAt(remainingRuns, prevSibling.getRuns().length)
 
       // Remove current node from virtual and real DOM
       siblings.splice(currentIndex, 1)
-      this.renderer.deleteNode(nodeToDelete.getId())
+      const id = nodeToDelete.getId()
+      if (id) {
+        this.renderer.deleteNode(id)
+      }
 
-      // Update cursor position
-      this.caretManager.setCursorPosition(prevSibling.getId(), this.cursorOffset)
-
+      // Update renderer and cursor position
+      this.renderer.updateNode(prevSibling)
+      const prevId = prevSibling.getId()
+      if (prevId) {
+        this.caretManager.setCursorPosition(prevId, this.cursorOffset)
+      }
       return
     }
 
     // Normal backspace within the current node
-    const currentText = this.currentNode.getTextContent()
-    const beforeText = currentText.slice(0, this.cursorOffset - 1) // exclude last character
-    const afterText = currentText.slice(this.cursorOffset)
+    const runs = this.currentNode.getRuns()
+    let totalOffset = 0
+    let currentRunIndex = 0
+    let currentRun = runs[0]
 
-    // Update original node with text before caret
-    this.currentNode.setTextContent(beforeText + afterText)
+    // Find which run contains the cursor
+    for (let i = 0; i < runs.length; i++) {
+      const run = runs[i]
+      const runLength = run.getText().length
+      if (totalOffset + runLength >= this.cursorOffset) {
+        currentRunIndex = i
+        currentRun = run
+        break
+      }
+      totalOffset += runLength
+    }
+
+    if (!currentRun) return
+
+    // Calculate offset within the current run
+    const runOffset = this.cursorOffset - totalOffset
+
+    if (runOffset === 0 && currentRunIndex > 0) {
+      // We're at the beginning of a run that's not the first run
+      // Merge with previous run
+      const prevRunIndex = currentRunIndex - 1
+      this.currentNode.mergeRuns(prevRunIndex, currentRunIndex)
+      this.cursorOffset--
+    } else {
+      // Normal backspace within a run
+      const text = currentRun.getText()
+      const newText = text.slice(0, runOffset - 1) + text.slice(runOffset)
+      currentRun.setText(newText)
+      this.cursorOffset--
+    }
+
     this.renderer.updateNode(this.currentNode)
-
-    this.cursorOffset--
-    this.caretManager.setCursorPosition(this.currentNode.getId(), this.cursorOffset)
+    const id = this.currentNode.getId()
+    if (id) {
+      this.caretManager.setCursorPosition(id, this.cursorOffset)
+    }
   }
 }

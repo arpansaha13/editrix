@@ -36,9 +36,11 @@ export class DomRenderer implements Renderer {
       element.setAttribute(name, value)
     })
 
-    if (node.getTextContent()) {
-      element.textContent = node.getTextContent()
-    }
+    // Create text nodes for each run
+    node.getRuns().forEach(run => {
+      const text = document.createTextNode(run.getText())
+      element.appendChild(text)
+    })
 
     return element
   }
@@ -70,10 +72,16 @@ export class DomRenderer implements Renderer {
     const element = document.querySelector(`[data-editrix-id="${node.getId()}"]`)
     if (!element) return
 
-    // Update text content
-    if (node.getTextContent() !== element.textContent) {
-      element.textContent = node.getTextContent()
+    // Clear existing text nodes
+    while (element.firstChild) {
+      element.removeChild(element.firstChild)
     }
+
+    // Create new text nodes for each run
+    node.getRuns().forEach(run => {
+      const text = document.createTextNode(run.getText())
+      element.appendChild(text)
+    })
 
     // Update attributes
     node.getAttributes().forEach((value, name) => {
