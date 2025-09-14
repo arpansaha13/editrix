@@ -1,4 +1,5 @@
 import { BlockNode } from '../nodes/block'
+import { ContainerNode } from '../nodes/container'
 import type { Renderer } from './interface'
 
 export class DomRenderer implements Renderer {
@@ -8,40 +9,47 @@ export class DomRenderer implements Renderer {
     this.container = container
   }
 
-  mount(blockNode: BlockNode) {
-    const element = this.createElement(blockNode)
+  mount(node: ContainerNode) {
+    const element = this.createContainerElement(node)
     this.container.appendChild(element)
     return element
   }
 
-  private createElement(blockNode: BlockNode): HTMLElement {
-    const element = document.createElement(blockNode.getTagName())
+  private createContainerElement(node: ContainerNode): HTMLElement {
+    const element = document.createElement(node.getTagName())
 
-    // Set attributes
-    blockNode.getAttributes().forEach((value, name) => {
+    node.getAttributes().forEach((value, name) => {
       element.setAttribute(name, value)
     })
 
-    // Set text content if any
-    if (blockNode.getTextContent()) {
-      element.textContent = blockNode.getTextContent()
-    }
-
-    // Create child elements
-    blockNode.getChildren().forEach(child => {
-      element.appendChild(this.createElement(child))
+    node.getChildren().forEach(child => {
+      element.appendChild(this.createBlockElement(child))
     })
 
     return element
   }
 
-  createNode(blockNode: BlockNode, parentSelector: string, siblingSelector?: string): HTMLElement {
+  private createBlockElement(node: BlockNode): HTMLElement {
+    const element = document.createElement(node.getTagName())
+
+    node.getAttributes().forEach((value, name) => {
+      element.setAttribute(name, value)
+    })
+
+    if (node.getTextContent()) {
+      element.textContent = node.getTextContent()
+    }
+
+    return element
+  }
+
+  createNode(node: BlockNode, parentSelector: string, siblingSelector?: string): HTMLElement {
     const parent = document.querySelector(parentSelector)
     if (!parent) {
       throw new Error(`Parent element not found with selector: ${parentSelector}`)
     }
 
-    const element = this.createElement(blockNode)
+    const element = this.createBlockElement(node)
 
     if (siblingSelector) {
       const sibling = document.querySelector(siblingSelector)
@@ -58,25 +66,25 @@ export class DomRenderer implements Renderer {
     return element
   }
 
-  updateNode(blockNode: BlockNode) {
-    const element = document.querySelector(`[data-editrix-id="${blockNode.getId()}"]`)
+  updateNode(node: BlockNode) {
+    const element = document.querySelector(`[data-editrix-id="${node.getId()}"]`)
     if (!element) return
 
     // Update text content
-    if (blockNode.getTextContent() !== element.textContent) {
-      element.textContent = blockNode.getTextContent()
+    if (node.getTextContent() !== element.textContent) {
+      element.textContent = node.getTextContent()
     }
 
     // Update attributes
-    blockNode.getAttributes().forEach((value, name) => {
+    node.getAttributes().forEach((value, name) => {
       if (element.getAttribute(name) !== value) {
         element.setAttribute(name, value)
       }
     })
   }
 
-  deleteNode(blockNodeId: string) {
-    const element = document.querySelector(`[data-editrix-id="${blockNodeId}"]`)
+  deleteNode(nodeId: string) {
+    const element = document.querySelector(`[data-editrix-id="${nodeId}"]`)
     if (element) {
       element.remove()
     }

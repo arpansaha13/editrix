@@ -1,10 +1,10 @@
 import type { HtmlTagName } from './types';
 
-const contentTags: HtmlTagName[] = ['p', 'h1', 'h2', 'h3']
+const blockNodeTags: HtmlTagName[] = ['p', 'h1', 'h2', 'h3']
 const arrowKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']
 
-export function isContentTag(tagName: HtmlTagName) {
-  return contentTags.includes(tagName)
+export function isBlockNodeTag(tagName: HtmlTagName) {
+  return blockNodeTags.includes(tagName)
 }
 
 export function isArrowKey(key: string) {

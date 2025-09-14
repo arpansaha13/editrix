@@ -1,23 +1,24 @@
 import type { BlockNode } from '../nodes/block'
+import type { ContainerNode } from '../nodes/container'
 
 export interface Renderer {
   /**
-   * Mounts the root BlockNode to the container
+   * Mounts the root ContainerNode to the container
    */
-  mount(blockNode: BlockNode): HTMLElement
+  mount(node: ContainerNode): HTMLElement
 
   /**
    * Creates a new DOM node from a BlockNode under the specified parent
-   * @param blockNode The BlockNode to create a DOM node for
+   * @param node The BlockNode to create a DOM node for
    * @param parentSelector Selector for the parent DOM node
    * @param siblingSelector Optional selector for the sibling after which to insert
    */
-  createNode(blockNode: BlockNode, parentSelector: string, siblingSelector?: string): HTMLElement
+  createNode(node: BlockNode, parentSelector: string, siblingSelector?: string): HTMLElement
 
   /**
    * Updates an existing DOM node with BlockNode changes
    */
-  updateNode(blockNode: BlockNode): void
+  updateNode(node: BlockNode): void
 
   /**
    * Removes a DOM node by its corresponding BlockNode ID

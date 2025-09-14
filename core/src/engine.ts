@@ -1,4 +1,5 @@
 import { BlockNode } from './nodes/block'
+import { ContainerNode } from './nodes/container'
 import { DomRenderer } from './renderers/renderer'
 import { EDITRIX_DATA_ID, ZERO_WIDTH_SPACE } from './constants'
 import { isArrowKey, isTypeableCharacter } from './utils'
@@ -8,7 +9,7 @@ export class Editrix {
   private readonly container: HTMLElement | null = null
   private readonly renderer: DomRenderer = null!
   private readonly caretManager: CaretManager = null!
-  private readonly root: BlockNode
+  private readonly root: ContainerNode
   private currentNode: BlockNode | null = null
   private cursorOffset = 0
 
@@ -18,7 +19,7 @@ export class Editrix {
       throw new Error(`Container not found with selector: ${selector}`)
     }
 
-    this.root = new BlockNode('article', null)
+    this.root = new ContainerNode('article', null)
     const initialParagraph = new BlockNode('p', this.root)
     this.root.appendChild(initialParagraph)
 
@@ -77,12 +78,12 @@ export class Editrix {
     }
   }
 
-  private findBlockNode(blockNodeId: string, node: BlockNode): BlockNode | null {
-    if (node.getId() === blockNodeId) return node
-    for (const child of node.getChildren()) {
-      const found = this.findBlockNode(blockNodeId, child)
-      if (found) return found
-    }
+  private findBlockNode(blockNodeId: string, container: ContainerNode): BlockNode | null {
+    // First check immediate children of this container
+    const directChild = container.getChildren().find(child => child.getId() === blockNodeId)
+    if (directChild) return directChild
+
+    // If not found in immediate children, check nested containers (if we add those later)
     return null
   }
 

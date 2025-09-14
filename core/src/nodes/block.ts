@@ -1,22 +1,25 @@
 import { EDITRIX_DATA_ID, ZERO_WIDTH_SPACE } from '../constants'
-import { isContentTag } from '../utils'
+import { isBlockNodeTag } from '../utils'
 import type { HtmlTagName } from '../types'
+import type { ContainerNode } from './container'
 
 export class BlockNode {
   private readonly id: string
-  private readonly children: BlockNode[]
   private readonly attributes: Map<string, string>
   private tagName: HtmlTagName
   private textContent: string
-  private parent: BlockNode | null
+  private readonly parent: ContainerNode
 
-  constructor(tagName: HtmlTagName, parent: BlockNode | null) {
+  constructor(tagName: HtmlTagName, parent: ContainerNode) {
+    if (!isBlockNodeTag(tagName)) {
+      throw new Error(`Invalid tag for block node: ${tagName}`)
+    }
+
     this.id = Math.random().toString(36).substring(2, 9)
-    this.children = []
     this.attributes = new Map()
     this.parent = parent
     this.tagName = tagName
-    this.textContent = isContentTag(tagName) ? ZERO_WIDTH_SPACE : ''
+    this.textContent = ZERO_WIDTH_SPACE
 
     this.setAttribute(EDITRIX_DATA_ID, this.id)
     this.setAttribute('contenteditable', 'true')
@@ -50,39 +53,12 @@ export class BlockNode {
     }
   }
 
-  appendChild(child: BlockNode) {
-    child.parent = this
-    this.children.push(child)
-  }
-
-  /**
-   * Insert new node after the reference node
-   * @param newNode The node to insert
-   * @param referenceNode The node after which the new node will be inserted
-   */
-  insertChildAfter(newNode: BlockNode, referenceNode: BlockNode) {
-    const index = this.children.findIndex(child => child.getId() === referenceNode.getId())
-    if (index !== -1) {
-      this.children.splice(index + 1, 0, newNode)
-    }
-  }
-
   remove() {
-    if (this.parent) {
-      const index = this.parent.children.indexOf(this)
-      if (index !== -1) {
-        this.parent.children.splice(index, 1)
-      }
-      this.parent = null
-    }
+    this.parent.removeChild(this)
   }
 
-  getParent(): BlockNode | null {
+  getParent(): ContainerNode {
     return this.parent
-  }
-
-  getChildren(): BlockNode[] {
-    return this.children
   }
 
   setAttribute(name: string, value: string) {
