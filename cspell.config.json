@@ -27,8 +27,7 @@
     "editrix",
     "esbuild",
     "esno",
-    "saha",
-    "vnode"
+    "saha"
   ],
   "patterns": [
     {

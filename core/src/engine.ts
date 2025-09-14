@@ -1,4 +1,4 @@
-import { VNode } from './vnode/vnode'
+import { BlockNode } from './nodes/block'
 import { DomRenderer } from './renderers/renderer'
 import { EDITRIX_DATA_ID, ZERO_WIDTH_SPACE } from './constants'
 import { isArrowKey, isTypeableCharacter } from './utils'
@@ -8,8 +8,8 @@ export class Editrix {
   private readonly container: HTMLElement | null = null
   private readonly renderer: DomRenderer = null!
   private readonly caretManager: CaretManager = null!
-  private readonly root: VNode
-  private currentNode: VNode | null = null
+  private readonly root: BlockNode
+  private currentNode: BlockNode | null = null
   private cursorOffset = 0
 
   constructor(selector: string) {
@@ -18,8 +18,8 @@ export class Editrix {
       throw new Error(`Container not found with selector: ${selector}`)
     }
 
-    this.root = new VNode('article', null)
-    const initialParagraph = new VNode('p', this.root)
+    this.root = new BlockNode('article', null)
+    const initialParagraph = new BlockNode('p', this.root)
     this.root.appendChild(initialParagraph)
 
     this.renderer = new DomRenderer(this.container)
@@ -35,9 +35,9 @@ export class Editrix {
   private readonly eventHandlers = {
     click: (e: MouseEvent) => {
       const target = e.target as HTMLElement
-      const vnodeId = target.getAttribute(EDITRIX_DATA_ID)
-      if (vnodeId) {
-        const node = this.findVNode(vnodeId, this.root)
+      const blockNodeId = target.getAttribute(EDITRIX_DATA_ID)
+      if (blockNodeId) {
+        const node = this.findBlockNode(blockNodeId, this.root)
         if (!node) return
 
         this.currentNode = node
@@ -45,7 +45,7 @@ export class Editrix {
         const range = this.caretManager.getRangeFromPoint(e.clientX, e.clientY)
         if (range) {
           this.cursorOffset = range.startOffset
-          this.caretManager.setCursorPosition(vnodeId, this.cursorOffset)
+          this.caretManager.setCursorPosition(blockNodeId, this.cursorOffset)
         }
       }
     },
@@ -77,10 +77,10 @@ export class Editrix {
     }
   }
 
-  private findVNode(vnodeId: string, node: VNode): VNode | null {
-    if (node.getId() === vnodeId) return node
+  private findBlockNode(blockNodeId: string, node: BlockNode): BlockNode | null {
+    if (node.getId() === blockNodeId) return node
     for (const child of node.getChildren()) {
-      const found = this.findVNode(vnodeId, child)
+      const found = this.findBlockNode(blockNodeId, child)
       if (found) return found
     }
     return null
@@ -124,9 +124,9 @@ export class Editrix {
 
     if (newPosition) {
       this.cursorOffset = newPosition.offset
-      const vnode = this.findVNode(newPosition.vnodeId, this.root)
-      if (vnode) {
-        this.currentNode = vnode
+      const blockNode = this.findBlockNode(newPosition.blockNodeId, this.root)
+      if (blockNode) {
+        this.currentNode = blockNode
       }
     }
   }
@@ -145,7 +145,7 @@ export class Editrix {
     const parent = this.currentNode.getParent()
 
     if (parent) {
-      const newNode = new VNode(this.currentNode.getTagName(), parent)
+      const newNode = new BlockNode(this.currentNode.getTagName(), parent)
       newNode.setTextContent(afterText)
 
       parent.insertChildAfter(newNode, this.currentNode)

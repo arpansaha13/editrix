@@ -3,11 +3,11 @@ import type { CursorPosition } from './interface';
 
 export class CaretManager {
   setCursorPosition(
-    vnodeId: string,
+    blockNodeId: string,
     offset: number,
     direction?: "left" | "right" | "up" | "down"
   ): CursorPosition | null {
-    const element = document.querySelector(`[data-editrix-id="${vnodeId}"]`);
+    const element = document.querySelector(`[data-editrix-id="${blockNodeId}"]`);
     if (!element) return null;
 
     const sel = window.getSelection();
@@ -57,8 +57,8 @@ export class CaretManager {
     }
 
     this.applyRange(sel, node, newOffset);
-    const vnodeId = this.getVnodeIdFromNode(node);
-    return vnodeId ? { vnodeId, offset: newOffset } : null;
+    const blockNodeId = this.getBlockNodeIdFromNode(node);
+    return blockNodeId ? { blockNodeId, offset: newOffset } : null;
   }
 
   private handleVerticalMove(
@@ -78,8 +78,8 @@ export class CaretManager {
     sel.removeAllRanges();
     sel.addRange(newRange);
 
-    const vnodeId = this.getVnodeIdFromNode(newRange.startContainer);
-    return vnodeId ? { vnodeId, offset: newRange.startOffset } : null;
+    const blockNodeId = this.getBlockNodeIdFromNode(newRange.startContainer);
+    return blockNodeId ? { blockNodeId, offset: newRange.startOffset } : null;
   }
 
   private setExplicitCursor(
@@ -106,8 +106,8 @@ export class CaretManager {
 
     this.applyRange(sel, textNode, safeOffset);
 
-    const vnodeId = this.getVnodeIdFromNode(textNode);
-    return vnodeId ? { vnodeId, offset: safeOffset } : null;
+    const blockNodeId = this.getBlockNodeIdFromNode(textNode);
+    return blockNodeId ? { blockNodeId, offset: safeOffset } : null;
   }
 
   /**
@@ -193,7 +193,7 @@ export class CaretManager {
     };
   }
 
-  private getVnodeIdFromNode(node: Node): string | null {
+  private getBlockNodeIdFromNode(node: Node): string | null {
     let el: Node | null = node;
     while (el && el.nodeType === Node.TEXT_NODE) {
       el = el.parentNode;

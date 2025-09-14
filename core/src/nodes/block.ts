@@ -1,16 +1,16 @@
 import { EDITRIX_DATA_ID, ZERO_WIDTH_SPACE } from '../constants'
-import type { HtmlTagName } from '../types'
 import { isContentTag } from '../utils'
+import type { HtmlTagName } from '../types'
 
-export class VNode {
+export class BlockNode {
   private readonly id: string
-  private readonly children: VNode[]
+  private readonly children: BlockNode[]
   private readonly attributes: Map<string, string>
   private tagName: HtmlTagName
   private textContent: string
-  private parent: VNode | null
+  private parent: BlockNode | null
 
-  constructor(tagName: HtmlTagName, parent: VNode | null) {
+  constructor(tagName: HtmlTagName, parent: BlockNode | null) {
     this.id = Math.random().toString(36).substring(2, 9)
     this.children = []
     this.attributes = new Map()
@@ -50,7 +50,7 @@ export class VNode {
     }
   }
 
-  appendChild(child: VNode) {
+  appendChild(child: BlockNode) {
     child.parent = this
     this.children.push(child)
   }
@@ -60,7 +60,7 @@ export class VNode {
    * @param newNode The node to insert
    * @param referenceNode The node after which the new node will be inserted
    */
-  insertChildAfter(newNode: VNode, referenceNode: VNode) {
+  insertChildAfter(newNode: BlockNode, referenceNode: BlockNode) {
     const index = this.children.findIndex(child => child.getId() === referenceNode.getId())
     if (index !== -1) {
       this.children.splice(index + 1, 0, newNode)
@@ -77,11 +77,11 @@ export class VNode {
     }
   }
 
-  getParent(): VNode | null {
+  getParent(): BlockNode | null {
     return this.parent
   }
 
-  getChildren(): VNode[] {
+  getChildren(): BlockNode[] {
     return this.children
   }
 
