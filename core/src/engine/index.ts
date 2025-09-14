@@ -150,14 +150,11 @@ export class Editrix {
 
     if (e.key === 'ArrowLeft') {
       newPosition = this.caretManager.setCursorPosition(this.currentNode.getId(), this.cursorOffset, 'left')
-    }
-    else if (e.key === 'ArrowRight') {
+    } else if (e.key === 'ArrowRight') {
       newPosition = this.caretManager.setCursorPosition(this.currentNode.getId(), this.cursorOffset, 'right')
-    }
-    else if (e.key === 'ArrowUp') {
+    } else if (e.key === 'ArrowUp') {
       newPosition = this.caretManager.setCursorPosition(this.currentNode.getId(), this.cursorOffset, 'up')
-    }
-    else if (e.key === 'ArrowDown') {
+    } else if (e.key === 'ArrowDown') {
       newPosition = this.caretManager.setCursorPosition(this.currentNode.getId(), this.cursorOffset, 'down')
     }
 
@@ -217,7 +214,7 @@ export class Editrix {
     this.renderer.createNode(
       newNode,
       `[data-editrix-id="${parent.getId()}"]`,
-      `[data-editrix-id="${this.currentNode.getId()}"]`
+      `[data-editrix-id="${this.currentNode.getId()}"]`,
     )
 
     this.renderer.updateNode(this.currentNode)

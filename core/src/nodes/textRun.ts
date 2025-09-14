@@ -1,10 +1,10 @@
-import { ZERO_WIDTH_SPACE } from '../constants';
+import { ZERO_WIDTH_SPACE } from '../constants'
 
 export class TextRun {
   private readonly id: string
-  private text: string;
-  private empty: boolean;
-  private bold: boolean;
+  private text: string
+  private empty: boolean
+  private bold: boolean
 
   constructor(text: string) {
     this.id = Math.random().toString(36).substring(2, 9)
@@ -24,7 +24,7 @@ export class TextRun {
   }
 
   getText(): string {
-    return this.text;
+    return this.text
   }
 
   setText(newText: string): void {
@@ -42,7 +42,7 @@ export class TextRun {
       this.empty = false
     }
 
-    this.text = newText;
+    this.text = newText
   }
 
   isBold(): boolean {

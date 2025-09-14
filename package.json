@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm -F playground dev",
-    "build": "esno scripts/build.mts"
+    "build": "esno scripts/build.mts",
+    "pretty": "prettier --write \"./core/src/**/*.ts\""
   },
   "engines": {
     "node": ">=22.0.0"

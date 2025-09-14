@@ -1,5 +1,5 @@
-import { EDITRIX_DATA_ID, ZERO_WIDTH_SPACE } from '../constants';
-import type { CursorPosition } from './interface';
+import { EDITRIX_DATA_ID, ZERO_WIDTH_SPACE } from '../constants'
+import type { CursorPosition } from './interface'
 
 export class CaretManager {
   private readonly rootId: string
@@ -11,109 +11,100 @@ export class CaretManager {
   setCursorPosition(
     blockNodeId: string,
     offset: number,
-    direction?: "left" | "right" | "up" | "down"
+    direction?: 'left' | 'right' | 'up' | 'down',
   ): CursorPosition | null {
-    const element = document.querySelector(`[data-editrix-id="${blockNodeId}"]`);
-    if (!element) return null;
+    const element = document.querySelector(`[data-editrix-id="${blockNodeId}"]`)
+    if (!element) return null
 
-    const sel = window.getSelection();
-    if (!sel) return null;
+    const sel = window.getSelection()
+    if (!sel) return null
 
     if (direction && sel.rangeCount > 0) {
-      const range = sel.getRangeAt(0);
+      const range = sel.getRangeAt(0)
 
-      if (direction === "left" || direction === 'right') {
-        return this.handleHorizontalMove(sel, range, direction);
+      if (direction === 'left' || direction === 'right') {
+        return this.handleHorizontalMove(sel, range, direction)
       }
 
-      return this.handleVerticalMove(sel, range, element, direction);
+      return this.handleVerticalMove(sel, range, element, direction)
     }
 
-    return this.setExplicitCursor(sel, element, offset);
+    return this.setExplicitCursor(sel, element, offset)
   }
 
-  private handleHorizontalMove(
-    sel: Selection,
-    range: Range,
-    direction: "left" | "right"
-  ): CursorPosition | null {
-    let node = range.startContainer;
-    if (node.nodeType !== Node.TEXT_NODE) return null;
+  private handleHorizontalMove(sel: Selection, range: Range, direction: 'left' | 'right'): CursorPosition | null {
+    let node = range.startContainer
+    if (node.nodeType !== Node.TEXT_NODE) return null
 
-    const textLength = node.textContent?.length ?? 0;
-    let newOffset =
-      direction === "left" ? range.startOffset - 1 : range.startOffset + 1;
+    const textLength = node.textContent?.length ?? 0
+    let newOffset = direction === 'left' ? range.startOffset - 1 : range.startOffset + 1
 
     if (newOffset < 0) {
-      const neighbor = this.moveToNeighbor(node, false);
+      const neighbor = this.moveToNeighbor(node, false)
       if (neighbor) {
-        node = neighbor.node;
-        newOffset = neighbor.offset;
+        node = neighbor.node
+        newOffset = neighbor.offset
       } else {
-        newOffset = 0;
+        newOffset = 0
       }
     } else if (newOffset > textLength) {
-      const neighbor = this.moveToNeighbor(node, true);
+      const neighbor = this.moveToNeighbor(node, true)
       if (neighbor) {
-        node = neighbor.node;
-        newOffset = neighbor.offset;
+        node = neighbor.node
+        newOffset = neighbor.offset
       } else {
-        newOffset = textLength;
+        newOffset = textLength
       }
     }
 
-    this.applyRange(sel, node, newOffset);
-    const blockNodeId = this.getBlockNodeIdFromNode(node);
-    return blockNodeId ? { blockNodeId, offset: newOffset } : null;
+    this.applyRange(sel, node, newOffset)
+    const blockNodeId = this.getBlockNodeIdFromNode(node)
+    return blockNodeId ? { blockNodeId, offset: newOffset } : null
   }
 
   private handleVerticalMove(
     sel: Selection,
     range: Range,
     element: Element,
-    direction: "up" | "down"
+    direction: 'up' | 'down',
   ): CursorPosition | null {
-    const rect = range.getBoundingClientRect();
-    const lineHeight = parseFloat(getComputedStyle(element).lineHeight || "16");
-    const x = rect.left;
-    const y = direction === "up" ? rect.top - lineHeight : rect.bottom + lineHeight;
+    const rect = range.getBoundingClientRect()
+    const lineHeight = parseFloat(getComputedStyle(element).lineHeight || '16')
+    const x = rect.left
+    const y = direction === 'up' ? rect.top - lineHeight : rect.bottom + lineHeight
 
-    const newRange = this.getRangeFromPoint(x, y);
-    if (!newRange) return null;
+    const newRange = this.getRangeFromPoint(x, y)
+    if (!newRange) return null
 
-    sel.removeAllRanges();
-    sel.addRange(newRange);
+    sel.removeAllRanges()
+    sel.addRange(newRange)
 
-    const blockNodeId = this.getBlockNodeIdFromNode(newRange.startContainer);
-    return blockNodeId ? { blockNodeId, offset: newRange.startOffset } : null;
+    const blockNodeId = this.getBlockNodeIdFromNode(newRange.startContainer)
+    return blockNodeId ? { blockNodeId, offset: newRange.startOffset } : null
   }
 
-  private setExplicitCursor(
-    sel: Selection,
-    element: Element,
-    offset: number
-  ): CursorPosition | null {
-    let textNode: Node | null = null;
+  private setExplicitCursor(sel: Selection, element: Element, offset: number): CursorPosition | null {
+    let textNode: Node | null = null
     for (const node of element.childNodes) {
       if (node.nodeType === Node.TEXT_NODE) {
-        textNode = node;
-        break;
+        textNode = node
+        break
       }
     }
 
     if (!textNode) {
-      textNode = document.createTextNode(ZERO_WIDTH_SPACE);
-      element.appendChild(textNode);
-      offset = 0;
+      textNode = document.createTextNode(ZERO_WIDTH_SPACE)
+      element.appendChild(textNode)
+      offset = 0
     }
 
-    const maxOffset = textNode.textContent?.length ?? 0;
-    const safeOffset = Math.max(0, Math.min(offset, maxOffset));
+    const maxOffset = textNode.textContent?.length ?? 0
+    const safeOffset = Math.max(0, Math.min(offset, maxOffset))
 
-    this.applyRange(sel, textNode, safeOffset);
+    this.applyRange(sel, textNode, safeOffset)
 
-    const blockNodeId = this.getBlockNodeIdFromNode(textNode);
-    return blockNodeId ? { blockNodeId, offset: safeOffset } : null;
+    const blockNodeId = this.getBlockNodeIdFromNode(textNode)
+    return blockNodeId ? { blockNodeId, offset: safeOffset } : null
   }
 
   /**
@@ -124,20 +115,20 @@ export class CaretManager {
    */
   getRangeFromPoint(x: number, y: number): Range | null {
     if (document.caretRangeFromPoint) {
-      return document.caretRangeFromPoint(x, y);
+      return document.caretRangeFromPoint(x, y)
     }
 
     if (document.caretPositionFromPoint) {
-      const pos = document.caretPositionFromPoint(x, y);
+      const pos = document.caretPositionFromPoint(x, y)
       if (pos) {
-        const range = document.createRange();
-        range.setStart(pos.offsetNode, pos.offset);
-        range.collapse(true);
-        return range;
+        const range = document.createRange()
+        range.setStart(pos.offsetNode, pos.offset)
+        range.collapse(true)
+        return range
       }
     }
 
-    return null;
+    return null
   }
 
   /**
@@ -190,12 +181,12 @@ export class CaretManager {
         return null
       }
 
-      let parentSibling: Node | null = forward ? parent.nextSibling : parent.previousSibling;
+      let parentSibling: Node | null = forward ? parent.nextSibling : parent.previousSibling
       // Skip non-element nodes (whitespace/newlines, comment nodes, etc.)
       while (parentSibling && !parentSiblingNodeTypes.includes(parentSibling.nodeType)) {
-        parentSibling = forward ? parentSibling.nextSibling : parentSibling.previousSibling;
+        parentSibling = forward ? parentSibling.nextSibling : parentSibling.previousSibling
       }
-      if (!parentSibling) return null;
+      if (!parentSibling) return null
 
       const textNode = findTextNodeInElement(parentSibling)
       if (textNode) return textNode
@@ -222,27 +213,27 @@ export class CaretManager {
     const textLength = nextNode.textContent?.length ?? 0
     return {
       node: nextNode,
-      offset: forward ? 0 : textLength
+      offset: forward ? 0 : textLength,
     }
   }
 
   private getBlockNodeIdFromNode(node: Node): string | null {
-    let el: Node | null = node;
+    let el: Node | null = node
     while (el && el.nodeType === Node.TEXT_NODE) {
-      el = el.parentNode;
+      el = el.parentNode
     }
     if (el instanceof Element) {
-      return el.closest("[data-editrix-id]")?.getAttribute("data-editrix-id") ?? null;
+      return el.closest('[data-editrix-id]')?.getAttribute('data-editrix-id') ?? null
     }
-    return null;
+    return null
   }
 
   private applyRange(sel: Selection, node: Node, offset: number) {
-    const newRange = document.createRange();
-    newRange.setStart(node, offset);
-    newRange.collapse(true);
+    const newRange = document.createRange()
+    newRange.setStart(node, offset)
+    newRange.collapse(true)
 
-    sel.removeAllRanges();
-    sel.addRange(newRange);
+    sel.removeAllRanges()
+    sel.addRange(newRange)
   }
 }
