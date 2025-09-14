@@ -1,10 +1,10 @@
-import { BlockNode } from './nodes/block'
-import { ContainerNode } from './nodes/container'
-import { DomRenderer } from './renderers/renderer'
-import { EDITRIX_DATA_ID, ZERO_WIDTH_SPACE } from './constants'
-import { isArrowKey, isTypeableCharacter } from './utils'
-import { CaretManager } from './renderers/caretManager'
-import { TextRun } from './nodes/textRun'
+import { BlockNode } from '../nodes/block'
+import { ContainerNode } from '../nodes/container'
+import { DomRenderer } from '../renderers/dom'
+import { EDITRIX_DATA_ID, ZERO_WIDTH_SPACE } from '../constants'
+import { isArrowKey, isTypeableCharacter } from '../utils'
+import { CaretManager } from '../renderers/caretManager'
+import { TextRun } from '../nodes/textRun'
 
 export class Editrix {
   private readonly container: HTMLElement | null = null
@@ -53,25 +53,27 @@ export class Editrix {
     },
 
     keydown: (e: KeyboardEvent) => {
-      if (e.key === 'Enter') {
+      const wrapperFn = (cb: (e: KeyboardEvent) => void) => {
         e.preventDefault()
-        this.handleEnterKey()
+        // Note that `wrapperFn` is an arrow function
+        // `this` refers to the class
+        cb.call(this, e)
+      }
+
+      if (e.key === 'Enter') {
+        wrapperFn(this.handleEnterKey)
       }
       else if (e.key === "Backspace") {
-        e.preventDefault()
-        this.handleBackspace()
+        wrapperFn(this.handleBackspace)
       }
       else if (e.key === 'b' && e.ctrlKey) {
-        e.preventDefault()
-        this.applyBold()
+        wrapperFn(this.applyBold)
       }
       else if (isTypeableCharacter(e)) {
-        e.preventDefault()
-        this.updateTextContent(e)
+        wrapperFn(this.updateTextContent)
       }
       else if (isArrowKey(e.key)) {
-        e.preventDefault()
-        this.updateCursorOffset(e)
+        wrapperFn(this.updateCursorOffset)
       }
     }
   }
