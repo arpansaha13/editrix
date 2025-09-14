@@ -1,16 +1,22 @@
+import { TextRun } from '../nodes/textRun'
 import { BlockNode } from '../nodes/block'
 import { ContainerNode } from '../nodes/container'
 import { DomRenderer } from '../renderers/dom'
-import { EDITRIX_DATA_ID, ZERO_WIDTH_SPACE } from '../constants'
-import { isArrowKey, isTypeableCharacter } from '../utils'
 import { CaretManager } from '../renderers/caretManager'
-import { TextRun } from '../nodes/textRun'
+import { isTypeableCharacter } from '../utils'
+import { EDITRIX_DATA_ID, ZERO_WIDTH_SPACE } from '../constants'
+import { createDefaultKeyBindings } from './defaultKeyBindings'
+import { CommandRegistry } from '../bindings/commandBinding'
+import { EditorCommands } from '../bindings/commands'
+import type { KeyBindingRegistry } from '../bindings/keyBinding'
 
 export class Editrix {
   private readonly container: HTMLElement | null = null
-  private readonly renderer: DomRenderer = null!
-  private readonly caretManager: CaretManager = null!
   private readonly root: ContainerNode
+  private readonly renderer: DomRenderer
+  private readonly caretManager: CaretManager
+  private readonly commandRegistry: CommandRegistry
+  private readonly defaultKeyBindings: KeyBindingRegistry
   private currentNode: BlockNode | null = null
   private cursorOffset = 0
 
@@ -30,8 +36,24 @@ export class Editrix {
     this.caretManager = new CaretManager(this.root.getId())
 
     this.setupEventListeners()
+    this.commandRegistry = this.createDefaultCommandRegistry()
+    this.defaultKeyBindings = createDefaultKeyBindings()
 
     this.currentNode = initialParagraph
+  }
+
+  private createDefaultCommandRegistry(): CommandRegistry {
+    const registry = new CommandRegistry()
+
+    // Text formatting
+    registry.register(EditorCommands.BOLD, this.applyBold.bind(this))
+
+    // Navigation and editing
+    registry.register(EditorCommands.ENTER, this.handleEnterKey.bind(this))
+    registry.register(EditorCommands.BACKSPACE, this.handleBackspace.bind(this))
+    registry.register(EditorCommands.MOVE_CURSOR, this.updateCursorOffset.bind(this))
+
+    return registry
   }
 
   private readonly eventHandlers = {
@@ -53,29 +75,19 @@ export class Editrix {
     },
 
     keydown: (e: KeyboardEvent) => {
-      const wrapperFn = (cb: (e: KeyboardEvent) => void) => {
+      const command = this.defaultKeyBindings.getCommand(e)
+      if (command) {
         e.preventDefault()
-        // Note that `wrapperFn` is an arrow function
-        // `this` refers to the class
-        cb.call(this, e)
+        const commandFn = this.commandRegistry.get(command)
+        if (commandFn) commandFn(e)
+        return
       }
 
-      if (e.key === 'Enter') {
-        wrapperFn(this.handleEnterKey)
+      if (isTypeableCharacter(e)) {
+        e.preventDefault()
+        this.updateTextContent(e)
       }
-      else if (e.key === "Backspace") {
-        wrapperFn(this.handleBackspace)
-      }
-      else if (e.key === 'b' && e.ctrlKey) {
-        wrapperFn(this.applyBold)
-      }
-      else if (isTypeableCharacter(e)) {
-        wrapperFn(this.updateTextContent)
-      }
-      else if (isArrowKey(e.key)) {
-        wrapperFn(this.updateCursorOffset)
-      }
-    }
+    },
   }
 
   private setupEventListeners() {

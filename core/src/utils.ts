@@ -1,14 +1,9 @@
-import type { HtmlTagName } from './types';
+import type { HtmlTagName } from './types'
 
 const blockNodeTags: HtmlTagName[] = ['p', 'h1', 'h2', 'h3']
-const arrowKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']
 
 export function isBlockNodeTag(tagName: HtmlTagName) {
   return blockNodeTags.includes(tagName)
-}
-
-export function isArrowKey(key: string) {
-  return arrowKeys.includes(key)
 }
 
 export function isTypeableCharacter(e: KeyboardEvent) {
