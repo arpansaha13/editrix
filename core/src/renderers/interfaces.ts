@@ -1,7 +1,7 @@
 import type { BlockNode } from '../nodes/block'
 import type { ContainerNode } from '../nodes/container'
 
-export interface Renderer {
+export interface IRenderer {
   /**
    * Mounts the root ContainerNode to the container
    */
@@ -27,7 +27,16 @@ export interface Renderer {
   deleteNode(blockNodeId: string): void
 }
 
-export interface CursorPosition {
+export interface ICaretPosition {
   blockNodeId: string
   offset: number
+}
+
+export interface ICaretManager {
+  getRangeFromPoint(x: number, y: number): Range | null
+  setCursorPosition(
+    blockNodeId: string,
+    offset: number,
+    direction?: 'left' | 'right' | 'up' | 'down',
+  ): ICaretPosition | null
 }

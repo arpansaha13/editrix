@@ -44,8 +44,8 @@ export class KeyBindingRegistry {
     this.bindings.set(binding.combo.toString(), binding.command)
   }
 
-  getCommand(e: KeyboardEvent): EditorCommands | undefined {
+  getCommand(e: KeyboardEvent): EditorCommands | null {
     const combo = KeyCombo.fromEvent(e).toString()
-    return this.bindings.get(combo)
+    return this.bindings.get(combo) ?? null
   }
 }

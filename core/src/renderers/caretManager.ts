@@ -1,5 +1,5 @@
 import { EDITRIX_DATA_ID, ZERO_WIDTH_SPACE } from '../constants'
-import type { CursorPosition } from './interface'
+import type { ICaretPosition } from './interfaces'
 
 export class CaretManager {
   private readonly rootId: string
@@ -12,7 +12,7 @@ export class CaretManager {
     blockNodeId: string,
     offset: number,
     direction?: 'left' | 'right' | 'up' | 'down',
-  ): CursorPosition | null {
+  ): ICaretPosition | null {
     const element = document.querySelector(`[data-editrix-id="${blockNodeId}"]`)
     if (!element) return null
 
@@ -32,7 +32,7 @@ export class CaretManager {
     return this.setExplicitCursor(sel, element, offset)
   }
 
-  private handleHorizontalMove(sel: Selection, range: Range, direction: 'left' | 'right'): CursorPosition | null {
+  private handleHorizontalMove(sel: Selection, range: Range, direction: 'left' | 'right'): ICaretPosition | null {
     let node = range.startContainer
     if (node.nodeType !== Node.TEXT_NODE) return null
 
@@ -67,7 +67,7 @@ export class CaretManager {
     range: Range,
     element: Element,
     direction: 'up' | 'down',
-  ): CursorPosition | null {
+  ): ICaretPosition | null {
     const rect = range.getBoundingClientRect()
     const lineHeight = parseFloat(getComputedStyle(element).lineHeight || '16')
     const x = rect.left
@@ -83,7 +83,7 @@ export class CaretManager {
     return blockNodeId ? { blockNodeId, offset: newRange.startOffset } : null
   }
 
-  private setExplicitCursor(sel: Selection, element: Element, offset: number): CursorPosition | null {
+  private setExplicitCursor(sel: Selection, element: Element, offset: number): ICaretPosition | null {
     let textNode: Node | null = null
     for (const node of element.childNodes) {
       if (node.nodeType === Node.TEXT_NODE) {

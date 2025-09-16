@@ -1,8 +1,8 @@
 import { BlockNode } from '../nodes/block'
 import { ContainerNode } from '../nodes/container'
-import type { Renderer } from './interface'
+import type { IRenderer } from './interfaces'
 
-export class DomRenderer implements Renderer {
+export class DomRenderer implements IRenderer {
   private readonly container: HTMLElement
 
   constructor(container: HTMLElement) {

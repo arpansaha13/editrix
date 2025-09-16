@@ -9,7 +9,7 @@ export class CommandRegistry {
     this.commands.set(name, command)
   }
 
-  get(name: EditorCommands): CommandFn | undefined {
-    return this.commands.get(name)
+  get(name: EditorCommands): CommandFn | null {
+    return this.commands.get(name) ?? null
   }
 }

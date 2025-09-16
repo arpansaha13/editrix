@@ -1,59 +1,57 @@
 import { TextRun } from '../nodes/textRun'
 import { BlockNode } from '../nodes/block'
 import { ContainerNode } from '../nodes/container'
-import { DomRenderer } from '../renderers/dom'
-import { CaretManager } from '../renderers/caretManager'
+import { EditorCommands } from '../bindings/commands'
 import { isTypeableCharacter } from '../utils'
 import { EDITRIX_DATA_ID, ZERO_WIDTH_SPACE } from '../constants'
-import { createDefaultKeyBindings } from './defaultKeyBindings'
-import { CommandRegistry } from '../bindings/commandBinding'
-import { EditorCommands } from '../bindings/commands'
-import type { KeyBindingRegistry } from '../bindings/keyBinding'
+import type { IRenderer, ICaretManager } from '../renderers/interfaces'
+import type { ICommandRegistry, IKeyBindingRegistry } from '../bindings/interfaces'
 
-export class Editrix {
-  private readonly container: HTMLElement | null = null
+export interface EngineOptions {
+  container: HTMLElement
+  renderer: IRenderer
+  caretManager: ICaretManager
+  commandRegistry: ICommandRegistry
+  keyBindingRegistry: IKeyBindingRegistry
+}
+
+export class Engine {
+  private readonly container: HTMLElement
   private readonly root: ContainerNode
-  private readonly renderer: DomRenderer
-  private readonly caretManager: CaretManager
-  private readonly commandRegistry: CommandRegistry
-  private readonly defaultKeyBindings: KeyBindingRegistry
+  private readonly renderer: IRenderer
+  private readonly caretManager: ICaretManager
+  private readonly commandRegistry: ICommandRegistry
+  private readonly keyBindingRegistry: IKeyBindingRegistry
   private currentNode: BlockNode | null = null
   private cursorOffset = 0
 
-  constructor(selector: string) {
-    this.container = document.querySelector<HTMLElement>(selector)
-    if (!this.container) {
-      throw new Error(`Container not found with selector: ${selector}`)
-    }
+  constructor(options: EngineOptions) {
+    this.container = options.container
+    this.renderer = options.renderer
+    this.caretManager = options.caretManager
+    this.commandRegistry = options.commandRegistry
+    this.keyBindingRegistry = options.keyBindingRegistry
 
     this.root = new ContainerNode('article', null)
     const initialParagraph = new BlockNode('p', this.root)
     this.root.appendChild(initialParagraph)
 
-    this.renderer = new DomRenderer(this.container)
     this.renderer.mount(this.root)
 
-    this.caretManager = new CaretManager(this.root.getId())
-
     this.setupEventListeners()
-    this.commandRegistry = this.createDefaultCommandRegistry()
-    this.defaultKeyBindings = createDefaultKeyBindings()
+    this.setupCommands()
 
     this.currentNode = initialParagraph
   }
 
-  private createDefaultCommandRegistry(): CommandRegistry {
-    const registry = new CommandRegistry()
-
+  private setupCommands() {
     // Text formatting
-    registry.register(EditorCommands.BOLD, this.applyBold.bind(this))
+    this.commandRegistry.register(EditorCommands.BOLD, this.applyBold.bind(this))
 
     // Navigation and editing
-    registry.register(EditorCommands.ENTER, this.handleEnterKey.bind(this))
-    registry.register(EditorCommands.BACKSPACE, this.handleBackspace.bind(this))
-    registry.register(EditorCommands.MOVE_CURSOR, this.updateCursorOffset.bind(this))
-
-    return registry
+    this.commandRegistry.register(EditorCommands.ENTER, this.handleEnterKey.bind(this))
+    this.commandRegistry.register(EditorCommands.BACKSPACE, this.handleBackspace.bind(this))
+    this.commandRegistry.register(EditorCommands.MOVE_CURSOR, this.updateCursorOffset.bind(this))
   }
 
   private readonly eventHandlers = {
@@ -75,7 +73,7 @@ export class Editrix {
     },
 
     keydown: (e: KeyboardEvent) => {
-      const command = this.defaultKeyBindings.getCommand(e)
+      const command = this.keyBindingRegistry.getCommand(e)
       if (command) {
         e.preventDefault()
         const commandFn = this.commandRegistry.get(command)
@@ -146,7 +144,7 @@ export class Editrix {
   private updateCursorOffset(e: KeyboardEvent) {
     if (!this.currentNode) return
 
-    let newPosition: ReturnType<CaretManager['setCursorPosition']> = null
+    let newPosition: ReturnType<ICaretManager['setCursorPosition']> = null
 
     if (e.key === 'ArrowLeft') {
       newPosition = this.caretManager.setCursorPosition(this.currentNode.getId(), this.cursorOffset, 'left')
