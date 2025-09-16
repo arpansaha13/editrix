@@ -9,8 +9,14 @@ export class CaretManager {
     this.rootId = rootId
   }
 
-  setCursorPosition(blockNodeId: string, offset: number, direction?: CaretDirection): ICaretPosition | null {
-    const element = document.querySelector(`[${EDITRIX_DATA_ID}="${blockNodeId}"]`)
+  setCursorPosition(
+    blockNodeId: string,
+    offset: number,
+    direction?: CaretDirection,
+  ): ICaretPosition | null {
+    const element = document.querySelector(
+      `[${EDITRIX_DATA_ID}="${blockNodeId}"]`,
+    )
     if (!element) return null
 
     const sel = window.getSelection()
@@ -38,7 +44,10 @@ export class CaretManager {
     if (node.nodeType !== Node.TEXT_NODE) return null
 
     const textLength = node.textContent?.length ?? 0
-    let newOffset = direction === CaretDirection.LEFT ? range.startOffset - 1 : range.startOffset + 1
+    let newOffset =
+      direction === CaretDirection.LEFT
+        ? range.startOffset - 1
+        : range.startOffset + 1
 
     if (newOffset < 0) {
       const neighbor = this.moveToNeighbor(node, false)
@@ -72,7 +81,10 @@ export class CaretManager {
     const rect = range.getBoundingClientRect()
     const lineHeight = parseFloat(getComputedStyle(element).lineHeight || '16')
     const x = rect.left
-    const y = direction === CaretDirection.UP ? rect.top - lineHeight : rect.bottom + lineHeight
+    const y =
+      direction === CaretDirection.UP
+        ? rect.top - lineHeight
+        : rect.bottom + lineHeight
 
     const newRange = this.getRangeFromPoint(x, y)
     if (!newRange) return null
@@ -84,7 +96,11 @@ export class CaretManager {
     return blockNodeId ? { blockNodeId, offset: newRange.startOffset } : null
   }
 
-  private setExplicitCursor(sel: Selection, element: Element, offset: number): ICaretPosition | null {
+  private setExplicitCursor(
+    sel: Selection,
+    element: Element,
+    offset: number,
+  ): ICaretPosition | null {
     let textNode: Node | null = null
     for (const node of element.childNodes) {
       if (node.nodeType === Node.TEXT_NODE) {
@@ -145,7 +161,10 @@ export class CaretManager {
    * @param forward Direction of movement. `true` for right/forward, `false` for left/backward.
    * @returns The target text node and the new caret offset, or `null` if no valid neighbor exists.
    */
-  private moveToNeighbor(node: Node, forward: boolean): { node: Node; offset: number } | null {
+  private moveToNeighbor(
+    node: Node,
+    forward: boolean,
+  ): { node: Node; offset: number } | null {
     const parentSiblingNodeTypes: number[] = [Node.ELEMENT_NODE, Node.TEXT_NODE]
 
     /** Helper function to find deepest text node in an element */
@@ -178,14 +197,24 @@ export class CaretManager {
       if (!parent) return null
 
       // Check if we've reached the root element
-      if (parent instanceof Element && parent.getAttribute(EDITRIX_DATA_ID) === this.rootId) {
+      if (
+        parent instanceof Element &&
+        parent.getAttribute(EDITRIX_DATA_ID) === this.rootId
+      ) {
         return null
       }
 
-      let parentSibling: Node | null = forward ? parent.nextSibling : parent.previousSibling
+      let parentSibling: Node | null = forward
+        ? parent.nextSibling
+        : parent.previousSibling
       // Skip non-element nodes (whitespace/newlines, comment nodes, etc.)
-      while (parentSibling && !parentSiblingNodeTypes.includes(parentSibling.nodeType)) {
-        parentSibling = forward ? parentSibling.nextSibling : parentSibling.previousSibling
+      while (
+        parentSibling &&
+        !parentSiblingNodeTypes.includes(parentSibling.nodeType)
+      ) {
+        parentSibling = forward
+          ? parentSibling.nextSibling
+          : parentSibling.previousSibling
       }
       if (!parentSibling) return null
 
@@ -224,7 +253,10 @@ export class CaretManager {
       el = el.parentNode
     }
     if (el instanceof Element) {
-      return el.closest(`[${EDITRIX_DATA_ID}]`)?.getAttribute(EDITRIX_DATA_ID) ?? null
+      return (
+        el.closest(`[${EDITRIX_DATA_ID}]`)?.getAttribute(EDITRIX_DATA_ID) ??
+        null
+      )
     }
     return null
   }

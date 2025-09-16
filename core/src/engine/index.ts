@@ -6,7 +6,10 @@ import { isTypeableCharacter } from '../utils'
 import { CaretDirection } from '../renderers/types'
 import { EDITRIX_DATA_ID, ZERO_WIDTH_SPACE } from '../constants'
 import type { IRenderer, ICaretManager } from '../renderers/interfaces'
-import type { ICommandRegistry, IKeyBindingRegistry } from '../bindings/interfaces'
+import type {
+  ICommandRegistry,
+  IKeyBindingRegistry,
+} from '../bindings/interfaces'
 
 export interface EngineOptions {
   container: HTMLElement
@@ -47,12 +50,24 @@ export class Engine {
 
   private setupCommands() {
     // Text formatting
-    this.commandRegistry.register(EditorCommands.BOLD, this.applyBold.bind(this))
+    this.commandRegistry.register(
+      EditorCommands.BOLD,
+      this.applyBold.bind(this),
+    )
 
     // Navigation and editing
-    this.commandRegistry.register(EditorCommands.ENTER, this.handleEnterKey.bind(this))
-    this.commandRegistry.register(EditorCommands.BACKSPACE, this.handleBackspace.bind(this))
-    this.commandRegistry.register(EditorCommands.MOVE_CURSOR, this.updateCursorOffset.bind(this))
+    this.commandRegistry.register(
+      EditorCommands.ENTER,
+      this.handleEnterKey.bind(this),
+    )
+    this.commandRegistry.register(
+      EditorCommands.BACKSPACE,
+      this.handleBackspace.bind(this),
+    )
+    this.commandRegistry.register(
+      EditorCommands.MOVE_CURSOR,
+      this.updateCursorOffset.bind(this),
+    )
   }
 
   private readonly eventHandlers = {
@@ -96,9 +111,14 @@ export class Engine {
     }
   }
 
-  private findBlockNode(blockNodeId: string, container: ContainerNode): BlockNode | null {
+  private findBlockNode(
+    blockNodeId: string,
+    container: ContainerNode,
+  ): BlockNode | null {
     // First check immediate children of this container
-    const directChild = container.getChildren().find(child => child.getId() === blockNodeId)
+    const directChild = container
+      .getChildren()
+      .find(child => child.getId() === blockNodeId)
     if (directChild) return directChild
 
     // If not found in immediate children, check nested containers (if we add those later)
@@ -138,7 +158,10 @@ export class Engine {
     // Because of ZERO_WIDTH_SPACE the initial cursorOffset will be 1 when the run is empty
     if (!beforeText.startsWith(ZERO_WIDTH_SPACE)) {
       this.cursorOffset++
-      this.caretManager.setCursorPosition(this.currentNode.getId(), this.cursorOffset)
+      this.caretManager.setCursorPosition(
+        this.currentNode.getId(),
+        this.cursorOffset,
+      )
     }
   }
 
@@ -160,7 +183,11 @@ export class Engine {
         CaretDirection.RIGHT,
       )
     } else if (e.key === 'ArrowUp') {
-      newPosition = this.caretManager.setCursorPosition(this.currentNode.getId(), this.cursorOffset, CaretDirection.UP)
+      newPosition = this.caretManager.setCursorPosition(
+        this.currentNode.getId(),
+        this.cursorOffset,
+        CaretDirection.UP,
+      )
     } else if (e.key === 'ArrowDown') {
       newPosition = this.caretManager.setCursorPosition(
         this.currentNode.getId(),
@@ -202,7 +229,9 @@ export class Engine {
 
     // Calculate offset within the current run
     const runOffset = this.cursorOffset - totalOffset
-    const splitRun = this.currentNode.splitRunAtOffset(currentRunIndex, runOffset) ?? new TextRun('')
+    const splitRun =
+      this.currentNode.splitRunAtOffset(currentRunIndex, runOffset) ??
+      new TextRun('')
 
     const parent = this.currentNode.getParent()
     if (!parent) return
@@ -236,7 +265,9 @@ export class Engine {
     this.caretManager.setCursorPosition(newNode.getId(), this.cursorOffset)
 
     // Set cursor to beginning of new node
-    const newElement = document.querySelector(`[${EDITRIX_DATA_ID}="${newNode.getId()}"]`)
+    const newElement = document.querySelector(
+      `[${EDITRIX_DATA_ID}="${newNode.getId()}"]`,
+    )
     if (newElement) {
       const range = document.createRange()
       const selection = window.getSelection()
@@ -252,7 +283,10 @@ export class Engine {
    */
   restoreFocus() {
     if (!this.currentNode) return
-    this.caretManager.setCursorPosition(this.currentNode.getId(), this.cursorOffset)
+    this.caretManager.setCursorPosition(
+      this.currentNode.getId(),
+      this.cursorOffset,
+    )
   }
 
   /**
@@ -291,7 +325,10 @@ export class Engine {
       currentRunIndex++
     } else {
       // Split current run and insert between
-      const splitRun = this.currentNode.splitRunAtOffset(currentRunIndex, runOffset)
+      const splitRun = this.currentNode.splitRunAtOffset(
+        currentRunIndex,
+        runOffset,
+      )
       this.currentNode.insertTextRun(emptyRun, currentRunIndex + 1)
       if (splitRun) {
         this.currentNode.insertTextRun(splitRun, currentRunIndex + 2)

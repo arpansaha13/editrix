@@ -14,7 +14,11 @@ export interface IRenderer {
    * @param parentSelector Selector for the parent DOM node
    * @param siblingSelector Optional selector for the sibling after which to insert
    */
-  createNode(node: BlockNode, parentSelector: string, siblingSelector?: string): HTMLElement
+  createNode(
+    node: BlockNode,
+    parentSelector: string,
+    siblingSelector?: string,
+  ): HTMLElement
 
   /**
    * Updates an existing DOM node with BlockNode changes
@@ -35,5 +39,9 @@ export interface ICaretPosition {
 
 export interface ICaretManager {
   getRangeFromPoint(x: number, y: number): Range | null
-  setCursorPosition(blockNodeId: string, offset: number, direction?: CaretDirection): ICaretPosition | null
+  setCursorPosition(
+    blockNodeId: string,
+    offset: number,
+    direction?: CaretDirection,
+  ): ICaretPosition | null
 }

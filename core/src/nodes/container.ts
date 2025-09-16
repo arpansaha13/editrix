@@ -31,14 +31,18 @@ export class ContainerNode {
   }
 
   insertChildAfter(newNode: BlockNode, referenceNode: BlockNode) {
-    const index = this.children.findIndex(child => child.getId() === referenceNode.getId())
+    const index = this.children.findIndex(
+      child => child.getId() === referenceNode.getId(),
+    )
     if (index !== -1) {
       this.children.splice(index + 1, 0, newNode)
     }
   }
 
   removeChild(child: BlockNode) {
-    const index = this.children.findIndex(node => node.getId() === child.getId())
+    const index = this.children.findIndex(
+      node => node.getId() === child.getId(),
+    )
     if (index !== -1) {
       this.children.splice(index, 1)
     }

@@ -1,5 +1,6 @@
 import { BlockNode } from '../nodes/block'
 import { ContainerNode } from '../nodes/container'
+import { EDITRIX_DATA_ID } from '../constants'
 import type { IRenderer } from './interfaces'
 
 export class DomRenderer implements IRenderer {
@@ -51,10 +52,16 @@ export class DomRenderer implements IRenderer {
     return element
   }
 
-  createNode(node: BlockNode, parentSelector: string, siblingSelector?: string): HTMLElement {
+  createNode(
+    node: BlockNode,
+    parentSelector: string,
+    siblingSelector?: string,
+  ): HTMLElement {
     const parent = document.querySelector(parentSelector)
     if (!parent) {
-      throw new Error(`Parent element not found with selector: ${parentSelector}`)
+      throw new Error(
+        `Parent element not found with selector: ${parentSelector}`,
+      )
     }
 
     const element = this.createBlockElement(node)
@@ -64,7 +71,9 @@ export class DomRenderer implements IRenderer {
       if (sibling) {
         sibling.insertAdjacentElement('afterend', element)
       } else {
-        throw new Error(`Sibling element not found with selector: ${siblingSelector}`)
+        throw new Error(
+          `Sibling element not found with selector: ${siblingSelector}`,
+        )
       }
     } else {
       // If no sibling selector, insert at the beginning
@@ -75,7 +84,9 @@ export class DomRenderer implements IRenderer {
   }
 
   updateNode(node: BlockNode) {
-    const element = document.querySelector(`[data-editrix-id="${node.getId()}"]`)
+    const element = document.querySelector(
+      `[${EDITRIX_DATA_ID}="${node.getId()}"]`,
+    )
     if (!element) return
 
     // Clear existing text nodes
@@ -104,7 +115,7 @@ export class DomRenderer implements IRenderer {
   }
 
   deleteNode(nodeId: string) {
-    const element = document.querySelector(`[data-editrix-id="${nodeId}"]`)
+    const element = document.querySelector(`[${EDITRIX_DATA_ID}="${nodeId}"]`)
     if (element) {
       element.remove()
     }
