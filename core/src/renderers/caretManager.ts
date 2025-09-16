@@ -1,4 +1,5 @@
 import { EDITRIX_DATA_ID, ZERO_WIDTH_SPACE } from '../constants'
+import { CaretDirection } from './types'
 import type { ICaretPosition } from './interfaces'
 
 export class CaretManager {
@@ -8,12 +9,8 @@ export class CaretManager {
     this.rootId = rootId
   }
 
-  setCursorPosition(
-    blockNodeId: string,
-    offset: number,
-    direction?: 'left' | 'right' | 'up' | 'down',
-  ): ICaretPosition | null {
-    const element = document.querySelector(`[data-editrix-id="${blockNodeId}"]`)
+  setCursorPosition(blockNodeId: string, offset: number, direction?: CaretDirection): ICaretPosition | null {
+    const element = document.querySelector(`[${EDITRIX_DATA_ID}="${blockNodeId}"]`)
     if (!element) return null
 
     const sel = window.getSelection()
@@ -32,12 +29,16 @@ export class CaretManager {
     return this.setExplicitCursor(sel, element, offset)
   }
 
-  private handleHorizontalMove(sel: Selection, range: Range, direction: 'left' | 'right'): ICaretPosition | null {
+  private handleHorizontalMove(
+    sel: Selection,
+    range: Range,
+    direction: CaretDirection.LEFT | CaretDirection.RIGHT,
+  ): ICaretPosition | null {
     let node = range.startContainer
     if (node.nodeType !== Node.TEXT_NODE) return null
 
     const textLength = node.textContent?.length ?? 0
-    let newOffset = direction === 'left' ? range.startOffset - 1 : range.startOffset + 1
+    let newOffset = direction === CaretDirection.LEFT ? range.startOffset - 1 : range.startOffset + 1
 
     if (newOffset < 0) {
       const neighbor = this.moveToNeighbor(node, false)
@@ -66,12 +67,12 @@ export class CaretManager {
     sel: Selection,
     range: Range,
     element: Element,
-    direction: 'up' | 'down',
+    direction: CaretDirection.UP | CaretDirection.DOWN,
   ): ICaretPosition | null {
     const rect = range.getBoundingClientRect()
     const lineHeight = parseFloat(getComputedStyle(element).lineHeight || '16')
     const x = rect.left
-    const y = direction === 'up' ? rect.top - lineHeight : rect.bottom + lineHeight
+    const y = direction === CaretDirection.UP ? rect.top - lineHeight : rect.bottom + lineHeight
 
     const newRange = this.getRangeFromPoint(x, y)
     if (!newRange) return null
@@ -223,7 +224,7 @@ export class CaretManager {
       el = el.parentNode
     }
     if (el instanceof Element) {
-      return el.closest('[data-editrix-id]')?.getAttribute('data-editrix-id') ?? null
+      return el.closest(`[${EDITRIX_DATA_ID}]`)?.getAttribute(EDITRIX_DATA_ID) ?? null
     }
     return null
   }

@@ -1,5 +1,6 @@
 import type { BlockNode } from '../nodes/block'
 import type { ContainerNode } from '../nodes/container'
+import type { CaretDirection } from './types'
 
 export interface IRenderer {
   /**
@@ -34,9 +35,5 @@ export interface ICaretPosition {
 
 export interface ICaretManager {
   getRangeFromPoint(x: number, y: number): Range | null
-  setCursorPosition(
-    blockNodeId: string,
-    offset: number,
-    direction?: 'left' | 'right' | 'up' | 'down',
-  ): ICaretPosition | null
+  setCursorPosition(blockNodeId: string, offset: number, direction?: CaretDirection): ICaretPosition | null
 }

@@ -3,6 +3,7 @@ import { BlockNode } from '../nodes/block'
 import { ContainerNode } from '../nodes/container'
 import { EditorCommands } from '../bindings/commands'
 import { isTypeableCharacter } from '../utils'
+import { CaretDirection } from '../renderers/types'
 import { EDITRIX_DATA_ID, ZERO_WIDTH_SPACE } from '../constants'
 import type { IRenderer, ICaretManager } from '../renderers/interfaces'
 import type { ICommandRegistry, IKeyBindingRegistry } from '../bindings/interfaces'
@@ -147,13 +148,25 @@ export class Engine {
     let newPosition: ReturnType<ICaretManager['setCursorPosition']> = null
 
     if (e.key === 'ArrowLeft') {
-      newPosition = this.caretManager.setCursorPosition(this.currentNode.getId(), this.cursorOffset, 'left')
+      newPosition = this.caretManager.setCursorPosition(
+        this.currentNode.getId(),
+        this.cursorOffset,
+        CaretDirection.LEFT,
+      )
     } else if (e.key === 'ArrowRight') {
-      newPosition = this.caretManager.setCursorPosition(this.currentNode.getId(), this.cursorOffset, 'right')
+      newPosition = this.caretManager.setCursorPosition(
+        this.currentNode.getId(),
+        this.cursorOffset,
+        CaretDirection.RIGHT,
+      )
     } else if (e.key === 'ArrowUp') {
-      newPosition = this.caretManager.setCursorPosition(this.currentNode.getId(), this.cursorOffset, 'up')
+      newPosition = this.caretManager.setCursorPosition(this.currentNode.getId(), this.cursorOffset, CaretDirection.UP)
     } else if (e.key === 'ArrowDown') {
-      newPosition = this.caretManager.setCursorPosition(this.currentNode.getId(), this.cursorOffset, 'down')
+      newPosition = this.caretManager.setCursorPosition(
+        this.currentNode.getId(),
+        this.cursorOffset,
+        CaretDirection.DOWN,
+      )
     }
 
     if (newPosition) {
@@ -211,8 +224,8 @@ export class Engine {
 
     this.renderer.createNode(
       newNode,
-      `[data-editrix-id="${parent.getId()}"]`,
-      `[data-editrix-id="${this.currentNode.getId()}"]`,
+      `[${EDITRIX_DATA_ID}="${parent.getId()}"]`,
+      `[${EDITRIX_DATA_ID}="${this.currentNode.getId()}"]`,
     )
 
     this.renderer.updateNode(this.currentNode)
@@ -223,7 +236,7 @@ export class Engine {
     this.caretManager.setCursorPosition(newNode.getId(), this.cursorOffset)
 
     // Set cursor to beginning of new node
-    const newElement = document.querySelector(`[data-editrix-id="${newNode.getId()}"]`)
+    const newElement = document.querySelector(`[${EDITRIX_DATA_ID}="${newNode.getId()}"]`)
     if (newElement) {
       const range = document.createRange()
       const selection = window.getSelection()
