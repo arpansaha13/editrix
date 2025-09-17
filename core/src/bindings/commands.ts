@@ -4,3 +4,8 @@ export enum EditorCommands {
   BACKSPACE = 'BACKSPACE',
   MOVE_CURSOR = 'MOVE_CURSOR',
 }
+
+export type OverridableEditorCommands = Extract<
+  EditorCommands,
+  EditorCommands.BOLD // for example
+>
