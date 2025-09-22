@@ -21,7 +21,7 @@ export class Editrix {
     }
 
     const renderer = new DomRenderer(container)
-    const caretManager = new CaretManager('') // The ID will be set when the root node is created
+    const caretManager = new CaretManager()
     const commandRegistry = new CommandRegistry()
     const keyBindingRegistry = KeyBindingRegistry.build(
       options?.overrides?.keyBindings,

@@ -41,6 +41,7 @@ export class Engine {
     this.root.appendChild(initialParagraph)
 
     this.renderer.mount(this.root)
+    this.caretManager.setRootId(this.root.getId())
 
     this.setupEventListeners()
     this.setupCommands()

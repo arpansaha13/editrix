@@ -39,6 +39,7 @@ export interface ICaretPosition {
 
 export interface ICaretManager {
   getRangeFromPoint(x: number, y: number): Range | null
+  setRootId(id: string): void
   setCursorPosition(
     blockNodeId: string,
     offset: number,

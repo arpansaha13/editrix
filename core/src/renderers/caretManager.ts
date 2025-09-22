@@ -3,10 +3,59 @@ import { CaretDirection } from './types'
 import type { ICaretPosition } from './interfaces'
 
 export class CaretManager {
-  private readonly rootId: string
+  private rootId: string
+  private treeWalker: TreeWalker | null = null
 
-  constructor(rootId: string) {
-    this.rootId = rootId
+  constructor() {
+    this.rootId = ''
+  }
+
+  setRootId(id: string) {
+    this.rootId = id
+    this.initTreeWalker()
+  }
+
+  private initTreeWalker() {
+    const rootElement = document.querySelector(
+      `[${EDITRIX_DATA_ID}="${this.rootId}"]`,
+    )
+    if (!rootElement) return
+
+    this.treeWalker = document.createTreeWalker(
+      rootElement,
+      NodeFilter.SHOW_TEXT,
+      {
+        acceptNode: (node: Node) => {
+          // Skip empty text nodes
+          if (!node.textContent?.trim()) {
+            return NodeFilter.FILTER_SKIP
+          }
+          return NodeFilter.FILTER_ACCEPT
+        },
+      },
+    )
+  }
+
+  private getNextTextNode(currentNode: Node, forward: boolean): Node | null {
+    if (!this.treeWalker) {
+      this.initTreeWalker()
+    }
+    if (!this.treeWalker) return null
+
+    // Position the TreeWalker at the current node
+    this.treeWalker.currentNode = currentNode
+
+    // Move to next/previous node
+    const nextNode = forward
+      ? this.treeWalker.nextNode()
+      : this.treeWalker.previousNode()
+    if (!nextNode) {
+      // If we hit the end/start, reset position and return null
+      this.treeWalker.currentNode = currentNode
+      return null
+    }
+
+    return nextNode
   }
 
   setCursorPosition(
@@ -48,27 +97,38 @@ export class CaretManager {
       direction === CaretDirection.LEFT
         ? range.startOffset - 1
         : range.startOffset + 1
+    let isMovingToNewNode = false
 
+    // Moving left
     if (newOffset < 0) {
-      const neighbor = this.moveToNeighbor(node, false)
-      if (neighbor) {
-        node = neighbor.node
-        newOffset = neighbor.offset
+      const previousNode = this.getNextTextNode(node, false)
+      if (previousNode) {
+        node = previousNode
+        newOffset = previousNode.textContent?.length ?? 0
+        isMovingToNewNode = true
       } else {
         newOffset = 0
       }
-    } else if (newOffset > textLength) {
-      const neighbor = this.moveToNeighbor(node, true)
-      if (neighbor) {
-        node = neighbor.node
-        newOffset = neighbor.offset
+    }
+    // Moving right
+    else if (newOffset > textLength) {
+      const nextNode = this.getNextTextNode(node, true)
+      if (nextNode) {
+        node = nextNode
+        newOffset = 0
+        isMovingToNewNode = true
       } else {
         newOffset = textLength
       }
     }
 
     this.applyRange(sel, node, newOffset)
-    const blockNodeId = this.getBlockNodeIdFromNode(node)
+
+    // Only get new block node ID if we moved to a new node
+    const blockNodeId = isMovingToNewNode
+      ? this.getBlockNodeIdFromNode(node)
+      : this.getBlockNodeIdFromNode(range.startContainer)
+
     return blockNodeId ? { blockNodeId, offset: newOffset } : null
   }
 
@@ -146,105 +206,6 @@ export class CaretManager {
     }
 
     return null
-  }
-
-  /**
-   * Moves the caret to the nearest neighboring text node in the given direction.
-   *
-   * - If a sibling text node exists at the same level, returns that node with the
-   *   caret placed at the beginning (for forward) or end (for backward).
-   * - If no text sibling exists, climbs to the parent element (e.g. a <p>) and
-   *   attempts to move to its next/previous sibling. If found, selects the first
-   *   (for forward) or last (for backward) text node inside that sibling element.
-   *
-   * @param node The current text node where the caret is located.
-   * @param forward Direction of movement. `true` for right/forward, `false` for left/backward.
-   * @returns The target text node and the new caret offset, or `null` if no valid neighbor exists.
-   */
-  private moveToNeighbor(
-    node: Node,
-    forward: boolean,
-  ): { node: Node; offset: number } | null {
-    const parentSiblingNodeTypes: number[] = [Node.ELEMENT_NODE, Node.TEXT_NODE]
-
-    /** Helper function to find deepest text node in an element */
-    const findDeepestTextNode = (element: Node): Node | null => {
-      let target: Node | null = forward ? element.firstChild : element.lastChild
-      while (target && target.nodeType !== Node.TEXT_NODE) {
-        if (target.nodeType === Node.ELEMENT_NODE) {
-          target = forward ? target.firstChild : target.lastChild
-        } else {
-          target = forward ? target.nextSibling : target.previousSibling
-        }
-      }
-      return target
-    }
-
-    /** Helper function to check if a node contains the text node we're looking for */
-    const findTextNodeInElement = (node: Node): Node | null => {
-      if (node.nodeType === Node.TEXT_NODE) {
-        return node
-      }
-      if (node.nodeType === Node.ELEMENT_NODE) {
-        return findDeepestTextNode(node)
-      }
-      return null
-    }
-
-    /** Helper function to recursively climb up the tree looking for siblings */
-    const findSiblingInAncestors = (node: Node): Node | null => {
-      const parent = node.parentNode
-      if (!parent) return null
-
-      // Check if we've reached the root element
-      if (
-        parent instanceof Element &&
-        parent.getAttribute(EDITRIX_DATA_ID) === this.rootId
-      ) {
-        return null
-      }
-
-      let parentSibling: Node | null = forward
-        ? parent.nextSibling
-        : parent.previousSibling
-      // Skip non-element nodes (whitespace/newlines, comment nodes, etc.)
-      while (
-        parentSibling &&
-        !parentSiblingNodeTypes.includes(parentSibling.nodeType)
-      ) {
-        parentSibling = forward
-          ? parentSibling.nextSibling
-          : parentSibling.previousSibling
-      }
-      if (!parentSibling) return null
-
-      const textNode = findTextNodeInElement(parentSibling)
-      if (textNode) return textNode
-
-      return findSiblingInAncestors(parent)
-    }
-
-    function findSibling(node: Node): Node | null {
-      let sibling = forward ? node.nextSibling : node.previousSibling
-      while (sibling) {
-        const textNode = findTextNodeInElement(sibling)
-        if (textNode) return textNode
-        sibling = forward ? sibling.nextSibling : sibling.previousSibling
-      }
-      return null
-    }
-
-    let nextNode = findSibling(node)
-    if (!nextNode) {
-      nextNode = findSiblingInAncestors(node)
-    }
-    if (!nextNode) return null
-
-    const textLength = nextNode.textContent?.length ?? 0
-    return {
-      node: nextNode,
-      offset: forward ? 0 : textLength,
-    }
   }
 
   private getBlockNodeIdFromNode(node: Node): string | null {
